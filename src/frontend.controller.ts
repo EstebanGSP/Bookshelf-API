@@ -230,6 +230,20 @@ export class FrontendController {
         <p class="muted">Pour gerer un club, connecte-toi avec son OWNER ou cree un nouveau club.</p>
         <label for="selectedClub">Club selectionne</label>
         <input id="selectedClub" readonly placeholder="Aucun club selectionne" />
+        <label for="editClubName">Nom du club</label>
+        <input id="editClubName" placeholder="Selectionne un club" />
+        <label for="editClubDescription">Description du club</label>
+        <textarea id="editClubDescription" placeholder="Selectionne un club"></textarea>
+        <label for="editClubVisibility">Visibilite du club</label>
+        <select id="editClubVisibility">
+          <option value="true">Public</option>
+          <option value="false">Prive</option>
+        </select>
+        <div class="row" style="margin-top:14px">
+          <button id="updateClub">Modifier le club</button>
+          <button id="deleteClub" class="danger">Supprimer le club</button>
+        </div>
+        <h3>Invitation</h3>
         <label for="inviteEmail">Email a inviter</label>
         <input id="inviteEmail" value="bob@test.com" />
         <label for="inviteRole">Role</label>
@@ -261,6 +275,7 @@ export class FrontendController {
         <textarea id="bookDescription">Un classique a lire ensemble.</textarea>
         <div class="row" style="margin-top:14px">
           <button id="createBook">Ajouter le livre</button>
+          <button id="updateBook" class="secondary">Modifier le livre selectionne</button>
         </div>
         <p id="bookStatus" class="status"></p>
       </section>
@@ -372,6 +387,9 @@ export class FrontendController {
       selectedClubId = club.id;
       selectedBookId = null;
       $('selectedClub').value = club.name + ' (' + club.id + ')';
+      $('editClubName').value = club.name;
+      $('editClubDescription').value = club.description || '';
+      $('editClubVisibility').value = String(club.isPublic);
       $('selectedBook').value = '';
       loadMembers().catch((error) => setStatus(memberStatus, error.message, 'error'));
       loadBooks().catch((error) => setStatus(bookStatus, error.message, 'error'));
@@ -381,6 +399,12 @@ export class FrontendController {
     function selectBook(book) {
       selectedBookId = book.id;
       $('selectedBook').value = book.title + ' (' + book.id + ')';
+      $('bookTitle').value = book.title;
+      $('bookAuthor').value = book.author;
+      $('bookGenre').value = book.genre || '';
+      $('bookPageCount').value = book.pageCount || '';
+      $('bookIsbn').value = book.isbn || '';
+      $('bookDescription').value = book.description || '';
       if (book.pageCount) {
         $('totalPages').value = book.pageCount;
       }
@@ -512,26 +536,13 @@ export class FrontendController {
       for (const book of result.data) {
         const card = document.createElement('article');
         card.className = 'club';
-        card.innerHTML = '<strong></strong><p class="muted"></p><div class="muted"></div><div class="row" style="margin-top:10px"><button type="button" class="secondary">Selectionner</button><button type="button" class="secondary">Renommer</button><button type="button" class="danger">Supprimer</button></div>';
+        card.innerHTML = '<strong></strong><p class="muted"></p><div class="muted"></div><div class="row" style="margin-top:10px"><button type="button" class="secondary">Selectionner</button><button type="button" class="secondary">Modifier</button><button type="button" class="danger">Supprimer</button></div>';
         card.querySelector('strong').textContent = book.title;
         card.querySelector('p').textContent = book.author + (book.genre ? ' - ' + book.genre : '');
         card.querySelector('div.muted').textContent = (book.pageCount ? book.pageCount + ' pages - ' : '') + (book.averageRating ? 'Note moyenne ' + book.averageRating.toFixed(1) + '/5' : 'Pas encore note');
         const buttons = card.querySelectorAll('button');
         buttons[0].addEventListener('click', () => selectBook(book));
-        buttons[1].addEventListener('click', async () => {
-          const title = prompt('Nouveau titre', book.title);
-          if (!title) return;
-          try {
-            await request('/clubs/' + selectedClubId + '/books/' + book.id, {
-              method: 'PATCH',
-              body: JSON.stringify({ title }),
-            });
-            setStatus(bookStatus, 'Livre mis a jour.', 'ok');
-            await loadBooks();
-          } catch (error) {
-            setStatus(bookStatus, error.message, 'error');
-          }
-        });
+        buttons[1].addEventListener('click', () => selectBook(book));
         buttons[2].addEventListener('click', async () => {
           try {
             await request('/clubs/' + selectedClubId + '/books/' + book.id, {
@@ -633,6 +644,45 @@ export class FrontendController {
       }
     });
 
+    $('updateClub').addEventListener('click', async () => {
+      try {
+        if (!selectedClubId) throw new Error('Selectionne un club avant modification.');
+        const body = await request('/clubs/' + selectedClubId, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name: $('editClubName').value,
+            description: $('editClubDescription').value,
+            isPublic: $('editClubVisibility').value === 'true',
+          }),
+        });
+        setStatus(memberStatus, 'Club modifie.', 'ok');
+        await loadClubs();
+        selectClub(body);
+        show(body);
+      } catch (error) {
+        setStatus(memberStatus, error.message, 'error');
+      }
+    });
+
+    $('deleteClub').addEventListener('click', async () => {
+      try {
+        if (!selectedClubId) throw new Error('Selectionne un club avant suppression.');
+        if (!confirm('Supprimer ce club et ses livres ?')) return;
+        await request('/clubs/' + selectedClubId, { method: 'DELETE' });
+        selectedClubId = null;
+        selectedBookId = null;
+        $('selectedClub').value = '';
+        $('selectedBook').value = '';
+        setStatus(memberStatus, 'Club supprime.', 'ok');
+        await loadClubs();
+        await loadMembers();
+        await loadBooks();
+        await loadProgress();
+      } catch (error) {
+        setStatus(memberStatus, error.message, 'error');
+      }
+    });
+
     $('createBook').addEventListener('click', async () => {
       try {
         if (!selectedClubId) throw new Error('Selectionne un club avant ajout.');
@@ -649,6 +699,30 @@ export class FrontendController {
           }),
         });
         setStatus(bookStatus, 'Livre ajoute.', 'ok');
+        await loadBooks();
+        selectBook(body);
+        show(body);
+      } catch (error) {
+        setStatus(bookStatus, error.message, 'error');
+      }
+    });
+
+    $('updateBook').addEventListener('click', async () => {
+      try {
+        if (!selectedClubId || !selectedBookId) throw new Error('Selectionne un livre avant modification.');
+        const pageCount = Number($('bookPageCount').value);
+        const body = await request('/clubs/' + selectedClubId + '/books/' + selectedBookId, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            title: $('bookTitle').value,
+            author: $('bookAuthor').value,
+            genre: $('bookGenre').value,
+            pageCount: pageCount > 0 ? pageCount : undefined,
+            isbn: $('bookIsbn').value,
+            description: $('bookDescription').value,
+          }),
+        });
+        setStatus(bookStatus, 'Livre modifie.', 'ok');
         await loadBooks();
         selectBook(body);
         show(body);
