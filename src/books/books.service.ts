@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ClubRole } from '../generated/prisma/client';
 import type { OffsetPaginationParams } from '../common/pipes/offset-pagination.pipe';
+import type { AuthUser } from '../common/types/auth-user';
 import { BooksRepository } from './books.repository';
 import { BookFiltersDto } from './dto/book-filters.dto';
 import { BookResponseDto } from './dto/book-response.dto';
@@ -15,9 +16,9 @@ import { UpdateBookDto } from './dto/update-book.dto';
 export class BooksService {
   constructor(private readonly books: BooksRepository) {}
 
-  async create(clubId: string, dto: CreateBookDto, userId: string) {
-    await this.ensureCanWrite(clubId, userId);
-    const book = await this.books.create(clubId, dto, userId);
+  async create(clubId: string, dto: CreateBookDto, actor: AuthUser) {
+    await this.ensureCanWrite(clubId, actor);
+    const book = await this.books.create(clubId, dto, actor.id);
     return BookResponseDto.fromPrisma(book);
   }
 
@@ -25,9 +26,9 @@ export class BooksService {
     clubId: string,
     pagination: OffsetPaginationParams,
     filters: BookFiltersDto,
-    userId: string,
+    actor: AuthUser,
   ) {
-    await this.ensureCanRead(clubId, userId);
+    await this.ensureCanRead(clubId, actor);
     const [data, total] = await Promise.all([
       this.books.findAll(clubId, pagination, filters),
       this.books.count(clubId, filters),
@@ -51,8 +52,8 @@ export class BooksService {
     };
   }
 
-  async findOne(clubId: string, id: string, userId: string) {
-    await this.ensureCanRead(clubId, userId);
+  async findOne(clubId: string, id: string, actor: AuthUser) {
+    await this.ensureCanRead(clubId, actor);
     const book = await this.books.findById(clubId, id);
     if (!book) {
       throw new NotFoundException(`Book ${id} not found`);
@@ -61,16 +62,21 @@ export class BooksService {
     return BookResponseDto.fromPrisma(book, rating._avg.rating);
   }
 
-  async update(clubId: string, id: string, dto: UpdateBookDto, userId: string) {
-    await this.ensureCanWrite(clubId, userId);
+  async update(
+    clubId: string,
+    id: string,
+    dto: UpdateBookDto,
+    actor: AuthUser,
+  ) {
+    await this.ensureCanWrite(clubId, actor);
     await this.ensureBookExists(clubId, id);
     const book = await this.books.update(clubId, id, dto);
     const rating = await this.books.averageRating(id);
     return BookResponseDto.fromPrisma(book, rating._avg.rating);
   }
 
-  async remove(clubId: string, id: string, userId: string) {
-    await this.ensureCanWrite(clubId, userId);
+  async remove(clubId: string, id: string, actor: AuthUser) {
+    await this.ensureCanWrite(clubId, actor);
     await this.ensureBookExists(clubId, id);
     await this.books.delete(clubId, id);
   }
@@ -83,13 +89,17 @@ export class BooksService {
     return book;
   }
 
-  private async ensureCanRead(clubId: string, userId: string) {
+  private async ensureCanRead(clubId: string, actor: AuthUser) {
     const club = await this.books.findClub(clubId);
     if (!club) {
       throw new NotFoundException(`Club ${clubId} not found`);
     }
 
-    const membership = await this.books.findMembership(clubId, userId);
+    if (actor.role === 'ADMIN') {
+      return null;
+    }
+
+    const membership = await this.books.findMembership(clubId, actor.id);
     if (!membership) {
       throw new ForbiddenException('Only club members can access books');
     }
@@ -97,9 +107,13 @@ export class BooksService {
     return membership;
   }
 
-  private async ensureCanWrite(clubId: string, userId: string) {
-    const membership = await this.ensureCanRead(clubId, userId);
+  private async ensureCanWrite(clubId: string, actor: AuthUser) {
+    const membership = await this.ensureCanRead(clubId, actor);
+    if (actor.role === 'ADMIN') {
+      return;
+    }
     if (
+      !membership ||
       !([ClubRole.OWNER, ClubRole.EDITOR] as ClubRole[]).includes(
         membership.role,
       )

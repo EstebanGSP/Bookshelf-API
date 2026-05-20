@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ClubRole } from '../generated/prisma/client';
 import type { OffsetPaginationParams } from '../common/pipes/offset-pagination.pipe';
+import type { AuthUser } from '../common/types/auth-user';
 import { ClubsRepository } from './clubs.repository';
 import { ClubResponseDto } from './dto/club-response.dto';
 import { CreateClubDto } from './dto/create-club.dto';
@@ -42,24 +43,28 @@ export class ClubsService {
     return ClubResponseDto.fromPrisma(club);
   }
 
-  async update(id: string, dto: UpdateClubDto, userId: string) {
-    await this.ensureOwner(id, userId);
+  async update(id: string, dto: UpdateClubDto, actor: AuthUser) {
+    await this.ensureOwner(id, actor);
     const club = await this.clubs.update(id, dto);
     return ClubResponseDto.fromPrisma(club);
   }
 
-  async remove(id: string, userId: string) {
-    await this.ensureOwner(id, userId);
+  async remove(id: string, actor: AuthUser) {
+    await this.ensureOwner(id, actor);
     await this.clubs.delete(id);
   }
 
-  private async ensureOwner(clubId: string, userId: string) {
+  private async ensureOwner(clubId: string, actor: AuthUser) {
     const club = await this.clubs.findById(clubId);
     if (!club) {
       throw new NotFoundException(`Club ${clubId} not found`);
     }
 
-    const membership = await this.clubs.findMembership(clubId, userId);
+    if (actor.role === 'ADMIN') {
+      return;
+    }
+
+    const membership = await this.clubs.findMembership(clubId, actor.id);
     if (membership?.role !== ClubRole.OWNER) {
       throw new ForbiddenException('Only club owners can perform this action');
     }

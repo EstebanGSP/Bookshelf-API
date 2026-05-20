@@ -29,7 +29,7 @@ export class ClubMembersController {
     @Body() dto: InviteClubMemberDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.clubMembersService.invite(clubId, dto, user.id);
+    return this.clubMembersService.invite(clubId, dto, user);
   }
 
   @Patch(':memberId')
@@ -39,7 +39,7 @@ export class ClubMembersController {
     @Body() dto: UpdateClubMemberRoleDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.clubMembersService.updateRole(clubId, memberId, dto, user.id);
+    return this.clubMembersService.updateRole(clubId, memberId, dto, user);
   }
 
   @Delete(':memberId')
@@ -49,6 +49,6 @@ export class ClubMembersController {
     @UUIDParam('memberId') memberId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.clubMembersService.remove(clubId, memberId, user.id);
+    return this.clubMembersService.remove(clubId, memberId, user);
   }
 }

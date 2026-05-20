@@ -7,6 +7,7 @@ export class UserResponseDto {
   lastName!: string | null;
   name!: string;
   role!: string;
+  banned!: boolean;
   createdAt!: Date;
 
   static fromPrisma(user: User): UserResponseDto {
@@ -17,6 +18,7 @@ export class UserResponseDto {
     dto.lastName = user.lastName;
     dto.name = user.name;
     dto.role = user.role;
+    dto.banned = user.banned;
     dto.createdAt = user.createdAt;
     return dto;
   }

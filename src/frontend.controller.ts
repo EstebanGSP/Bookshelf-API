@@ -221,6 +221,7 @@ export class FrontendController {
     </div>
     <div class="row">
       <span id="sessionBadge" class="pill warn">Non connecte</span>
+      <button id="adminModeBtn" class="secondary hidden">Mode admin</button>
       <button id="logoutBtn" class="secondary hidden">Deconnexion</button>
     </div>
   </header>
@@ -430,6 +431,36 @@ export class FrontendController {
         </div>
       </div>
     </section>
+
+    <section id="adminView" class="hidden stack">
+      <div class="panel stack">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <h2>Administration</h2>
+            <p class="muted">Vue reservee aux administrateurs globaux. Elle permet de tester la gestion complete sans appartenir aux clubs.</p>
+          </div>
+          <button id="leaveAdminBtn" class="secondary">Retour aux clubs</button>
+        </div>
+        <div class="grid-2">
+          <div class="soft stack">
+            <div class="row" style="justify-content:space-between">
+              <h3>Utilisateurs</h3>
+              <button id="reloadUsersBtn" class="secondary">Rafraichir</button>
+            </div>
+            <div id="adminUserList" class="list"></div>
+            <p id="adminUserMsg" class="status"></p>
+          </div>
+          <div class="soft stack">
+            <div class="row" style="justify-content:space-between">
+              <h3>Tous les clubs</h3>
+              <button id="reloadAdminClubsBtn" class="secondary">Rafraichir</button>
+            </div>
+            <div id="adminClubList" class="list"></div>
+            <p id="adminClubMsg" class="status"></p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -437,6 +468,7 @@ export class FrontendController {
     const state = {
       user: null,
       clubs: [],
+      adminUsers: [],
       selectedClub: null,
       members: [],
       books: [],
@@ -484,21 +516,32 @@ export class FrontendController {
     }
 
     function role() {
+      if (isAdmin()) return 'ADMIN';
       return state.membership ? state.membership.role : null;
     }
 
+    function isAdmin() {
+      return state.user && state.user.role === 'ADMIN';
+    }
+
     function isOwner() {
-      return role() === 'OWNER';
+      return role() === 'OWNER' || isAdmin();
     }
 
     function canEditBooks() {
-      return role() === 'OWNER' || role() === 'EDITOR';
+      return role() === 'OWNER' || role() === 'EDITOR' || isAdmin();
+    }
+
+    function canSaveOwnProgress() {
+      return !!state.membership && !!state.selectedBook;
     }
 
     function setAuthenticated(user) {
       state.user = user;
       el('authView').classList.toggle('hidden', !!user);
       el('appView').classList.toggle('hidden', !user);
+      el('adminView').classList.add('hidden');
+      el('adminModeBtn').classList.toggle('hidden', !user || user.role !== 'ADMIN');
       el('logoutBtn').classList.toggle('hidden', !user);
       el('sessionBadge').textContent = user ? user.email + ' - ' + user.role : 'Non connecte';
       el('sessionBadge').className = user ? 'pill ok' : 'pill warn';
@@ -560,7 +603,7 @@ export class FrontendController {
       el('inviteBtn').disabled = !isOwner();
       el('createBookBtn').disabled = !canEditBooks();
       el('updateBookBtn').disabled = !canEditBooks() || !state.selectedBook;
-      el('saveProgressBtn').disabled = !role() || !state.selectedBook;
+      el('saveProgressBtn').disabled = !canSaveOwnProgress();
       renderMembers();
       renderBooks();
       renderProgress([]);
@@ -568,6 +611,7 @@ export class FrontendController {
 
     function rightsText() {
       if (!role()) return 'Tu peux voir le club public, mais tu dois etre membre pour consulter les livres et la progression.';
+      if (role() === 'ADMIN') return 'ADMIN: tu peux gerer tous les clubs, membres et livres sans etre membre. Pour ta progression personnelle, il faut rester membre du club.';
       if (role() === 'OWNER') return 'OWNER: tu peux modifier le club, gerer les membres, gerer les livres et voir la progression globale.';
       if (role() === 'EDITOR') return 'EDITOR: tu peux gerer les livres et voir la progression globale.';
       return 'READER: tu peux consulter les livres et mettre a jour ta progression.';
@@ -646,12 +690,62 @@ export class FrontendController {
       });
     }
 
+    function renderAdminUsers() {
+      const list = el('adminUserList');
+      list.innerHTML = '';
+      if (!state.adminUsers.length) {
+        list.innerHTML = '<p class="muted">Aucun utilisateur charge.</p>';
+        return;
+      }
+
+      state.adminUsers.forEach((user) => {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = '<strong></strong><div class="muted"></div><div class="row"><select><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select><button class="secondary">Changer role</button><button class="danger"></button></div>';
+        item.querySelector('strong').textContent = user.name || user.email;
+        item.querySelector('.muted').textContent = user.email + ' - ' + (user.banned ? 'desactive' : 'actif');
+        const select = item.querySelector('select');
+        select.value = user.role;
+        const buttons = item.querySelectorAll('button');
+        buttons[0].addEventListener('click', () => updateAdminUserRole(user.id, select.value));
+        buttons[1].textContent = user.banned ? 'Reactiver' : 'Desactiver';
+        buttons[1].addEventListener('click', () => toggleAdminUser(user));
+        list.appendChild(item);
+      });
+    }
+
+    function renderAdminClubs() {
+      const list = el('adminClubList');
+      list.innerHTML = '';
+      if (!state.clubs.length) {
+        list.innerHTML = '<p class="muted">Aucun club charge.</p>';
+        return;
+      }
+
+      state.clubs.forEach((club) => {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = '<strong></strong><div class="muted"></div><div class="row"><span class="pill"></span><button class="secondary">Administrer</button><button class="danger">Supprimer</button></div>';
+        item.querySelector('strong').textContent = club.name;
+        item.querySelector('.muted').textContent = (club.description || 'Sans description') + ' - ' + (club.isPublic ? 'public' : 'prive');
+        item.querySelector('.pill').textContent = club.memberCount + ' membre(s), ' + club.bookCount + ' livre(s)';
+        const buttons = item.querySelectorAll('button');
+        buttons[0].addEventListener('click', async () => {
+          showAppMode();
+          await selectClub(club);
+        });
+        buttons[1].addEventListener('click', () => deleteAdminClub(club.id));
+        list.appendChild(item);
+      });
+    }
+
     async function refreshClubs() {
       try {
-        const result = await request('/clubs');
+        const result = await request(isAdmin() ? '/admin/clubs' : '/clubs');
         state.clubs = result.data || [];
         renderPublicClubs();
         renderClubs();
+        if (isAdmin()) renderAdminClubs();
       } catch (error) {
         message('clubCreateMsg', error.message, 'error');
       }
@@ -781,8 +875,79 @@ export class FrontendController {
       state.user = null;
       state.selectedClub = null;
       state.selectedBook = null;
+      state.adminUsers = [];
       setAuthenticated(null);
       await refreshClubs();
+    }
+
+    function showAdminMode() {
+      if (!isAdmin()) {
+        message('authMsg', 'Mode admin reserve aux administrateurs.', 'error');
+        return;
+      }
+      el('authView').classList.add('hidden');
+      el('appView').classList.add('hidden');
+      el('adminView').classList.remove('hidden');
+      refreshClubs();
+      loadAdminUsers();
+    }
+
+    function showAppMode() {
+      el('adminView').classList.add('hidden');
+      el('appView').classList.remove('hidden');
+    }
+
+    async function loadAdminUsers() {
+      try {
+        const result = await request('/users?limit=100');
+        state.adminUsers = result.data || [];
+        renderAdminUsers();
+        message('adminUserMsg', 'Utilisateurs charges.', 'ok');
+      } catch (error) {
+        message('adminUserMsg', error.message, 'error');
+      }
+    }
+
+    async function updateAdminUserRole(userId, nextRole) {
+      try {
+        await request('/users/' + userId, {
+          method: 'PATCH',
+          body: JSON.stringify({ role: nextRole })
+        });
+        message('adminUserMsg', 'Role utilisateur modifie.', 'ok');
+        await loadAdminUsers();
+      } catch (error) {
+        message('adminUserMsg', error.message, 'error');
+      }
+    }
+
+    async function toggleAdminUser(user) {
+      try {
+        await request('/admin/users/' + user.id + (user.banned ? '/enable' : '/disable'), {
+          method: 'PATCH',
+          body: '{}'
+        });
+        message('adminUserMsg', user.banned ? 'Utilisateur reactive.' : 'Utilisateur desactive.', 'ok');
+        await loadAdminUsers();
+      } catch (error) {
+        message('adminUserMsg', error.message, 'error');
+      }
+    }
+
+    async function deleteAdminClub(clubId) {
+      if (!confirm('Supprimer ce club en tant qu admin ?')) return;
+      try {
+        await request('/clubs/' + clubId, { method: 'DELETE' });
+        message('adminClubMsg', 'Club supprime.', 'ok');
+        if (state.selectedClub && state.selectedClub.id === clubId) {
+          state.selectedClub = null;
+          state.selectedBook = null;
+          renderWorkspace();
+        }
+        await refreshClubs();
+      } catch (error) {
+        message('adminClubMsg', error.message, 'error');
+      }
     }
 
     async function createClub() {
@@ -976,6 +1141,10 @@ export class FrontendController {
     el('loginBtn').addEventListener('click', login);
     el('registerBtn').addEventListener('click', register);
     el('logoutBtn').addEventListener('click', logout);
+    el('adminModeBtn').addEventListener('click', showAdminMode);
+    el('leaveAdminBtn').addEventListener('click', showAppMode);
+    el('reloadUsersBtn').addEventListener('click', loadAdminUsers);
+    el('reloadAdminClubsBtn').addEventListener('click', refreshClubs);
     el('reloadClubsBtn').addEventListener('click', refreshClubs);
     el('createClubBtn').addEventListener('click', createClub);
     el('updateClubBtn').addEventListener('click', updateClub);

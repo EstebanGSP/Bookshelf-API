@@ -25,6 +25,6 @@ export class ProgressController {
     @UUIDParam('bookId') bookId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.progressService.findForBook(clubId, bookId, user.id);
+    return this.progressService.findForBook(clubId, bookId, user);
   }
 }

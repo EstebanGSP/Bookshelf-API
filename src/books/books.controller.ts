@@ -20,7 +20,7 @@ export class BooksController {
     @Body() dto: CreateBookDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.booksService.create(clubId, dto, user.id);
+    return this.booksService.create(clubId, dto, user);
   }
 
   @Get()
@@ -33,7 +33,7 @@ export class BooksController {
     @CurrentUser() user: AuthUser,
   ) {
     const filters: BookFiltersDto = { title, author, genre };
-    return this.booksService.findAll(clubId, pagination, filters, user.id);
+    return this.booksService.findAll(clubId, pagination, filters, user);
   }
 
   @Get(':id')
@@ -42,7 +42,7 @@ export class BooksController {
     @UUIDParam('id') id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.booksService.findOne(clubId, id, user.id);
+    return this.booksService.findOne(clubId, id, user);
   }
 
   @Patch(':id')
@@ -52,7 +52,7 @@ export class BooksController {
     @Body() dto: UpdateBookDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.booksService.update(clubId, id, dto, user.id);
+    return this.booksService.update(clubId, id, dto, user);
   }
 
   @DeleteRoute()
@@ -61,6 +61,6 @@ export class BooksController {
     @UUIDParam('id') id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.booksService.remove(clubId, id, user.id);
+    return this.booksService.remove(clubId, id, user);
   }
 }

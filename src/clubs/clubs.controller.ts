@@ -36,11 +36,11 @@ export class ClubsController {
     @Body() dto: UpdateClubDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.clubsService.update(id, dto, user.id);
+    return this.clubsService.update(id, dto, user);
   }
 
   @DeleteRoute()
   remove(@UUIDParam('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.clubsService.remove(id, user.id);
+    return this.clubsService.remove(id, user);
   }
 }

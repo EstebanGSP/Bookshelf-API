@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ClubRole, ReadingStatus } from '../generated/prisma/client';
+import type { AuthUser } from '../common/types/auth-user';
 import { ProgressRepository } from './progress.repository';
 import { ReadingProgressResponseDto } from './dto/reading-progress-response.dto';
 import { UpdateReadingProgressDto } from './dto/update-reading-progress.dto';
@@ -71,8 +72,17 @@ export class ProgressService {
     return ReadingProgressResponseDto.fromPrisma(saved);
   }
 
-  async findForBook(clubId: string, bookId: string, userId: string) {
-    const { membership } = await this.ensureCanRead(clubId, bookId, userId);
+  async findForBook(clubId: string, bookId: string, actor: AuthUser) {
+    if (actor.role === 'ADMIN') {
+      const book = await this.progress.findBookInClub(clubId, bookId);
+      if (!book) {
+        throw new NotFoundException(`Book ${bookId} not found in this club`);
+      }
+      const items = await this.progress.findForBook(bookId);
+      return items.map((item) => ReadingProgressResponseDto.fromPrisma(item));
+    }
+
+    const { membership } = await this.ensureCanRead(clubId, bookId, actor.id);
     if (
       !([ClubRole.OWNER, ClubRole.EDITOR] as ClubRole[]).includes(
         membership.role,

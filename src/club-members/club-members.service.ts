@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ClubRole } from '../generated/prisma/client';
+import type { AuthUser } from '../common/types/auth-user';
 import { ClubMembersRepository } from './club-members.repository';
 import { ClubMemberResponseDto } from './dto/club-member-response.dto';
 import { InviteClubMemberDto } from './dto/invite-club-member.dto';
@@ -21,8 +22,8 @@ export class ClubMembersService {
     return members.map((member) => ClubMemberResponseDto.fromPrisma(member));
   }
 
-  async invite(clubId: string, dto: InviteClubMemberDto, actorId: string) {
-    await this.ensureOwner(clubId, actorId);
+  async invite(clubId: string, dto: InviteClubMemberDto, actor: AuthUser) {
+    await this.ensureOwner(clubId, actor);
 
     const invitedUser = await this.clubMembers.findUserByEmail(dto.email);
     const role = dto.role ?? ClubRole.READER;
@@ -32,7 +33,7 @@ export class ClubMembersService {
         clubId,
         dto.email,
         role,
-        actorId,
+        actor.id,
       );
       return {
         status: 'PENDING_INVITATION',
@@ -57,7 +58,7 @@ export class ClubMembersService {
       clubId,
       dto.email,
       role,
-      actorId,
+      actor.id,
       invitedUser.id,
       true,
     );
@@ -72,9 +73,9 @@ export class ClubMembersService {
     clubId: string,
     memberId: string,
     dto: UpdateClubMemberRoleDto,
-    actorId: string,
+    actor: AuthUser,
   ) {
-    await this.ensureOwner(clubId, actorId);
+    await this.ensureOwner(clubId, actor);
     const member = await this.ensureMemberInClub(clubId, memberId);
 
     if (member.role === ClubRole.OWNER && dto.role !== ClubRole.OWNER) {
@@ -85,8 +86,8 @@ export class ClubMembersService {
     return ClubMemberResponseDto.fromPrisma(updated);
   }
 
-  async remove(clubId: string, memberId: string, actorId: string) {
-    await this.ensureOwner(clubId, actorId);
+  async remove(clubId: string, memberId: string, actor: AuthUser) {
+    await this.ensureOwner(clubId, actor);
     const member = await this.ensureMemberInClub(clubId, memberId);
 
     if (member.role === ClubRole.OWNER) {
@@ -104,9 +105,13 @@ export class ClubMembersService {
     return club;
   }
 
-  private async ensureOwner(clubId: string, userId: string) {
+  private async ensureOwner(clubId: string, actor: AuthUser) {
     await this.ensureClubExists(clubId);
-    const membership = await this.clubMembers.findMembership(clubId, userId);
+    if (actor.role === 'ADMIN') {
+      return;
+    }
+
+    const membership = await this.clubMembers.findMembership(clubId, actor.id);
     if (membership?.role !== ClubRole.OWNER) {
       throw new ForbiddenException('Only club owners can manage members');
     }

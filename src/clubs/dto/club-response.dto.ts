@@ -8,8 +8,11 @@ export class ClubResponseDto {
   createdAt!: Date;
   updatedAt!: Date;
   memberCount!: number;
+  bookCount!: number;
 
-  static fromPrisma(club: Club & { _count?: { members: number } }) {
+  static fromPrisma(
+    club: Club & { _count?: { members: number; books?: number } },
+  ) {
     const dto = new ClubResponseDto();
     dto.id = club.id;
     dto.name = club.name;
@@ -18,6 +21,7 @@ export class ClubResponseDto {
     dto.createdAt = club.createdAt;
     dto.updatedAt = club.updatedAt;
     dto.memberCount = club._count?.members ?? 0;
+    dto.bookCount = club._count?.books ?? 0;
     return dto;
   }
 }
