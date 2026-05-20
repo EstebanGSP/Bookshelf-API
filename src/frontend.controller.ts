@@ -305,6 +305,7 @@ export class FrontendController {
               <button class="tab" data-tab="members">Membres</button>
               <button class="tab" data-tab="books">Livres</button>
               <button class="tab" data-tab="progress">Progression</button>
+              <button class="tab" data-tab="reviews">Avis</button>
             </div>
 
             <section id="tab-overview" class="tabPanel stack">
@@ -422,6 +423,37 @@ export class FrontendController {
                 </div>
               </div>
             </section>
+
+            <section id="tab-reviews" class="tabPanel hidden stack">
+              <div class="grid-2">
+                <div class="soft stack">
+                  <h3 id="reviewFormTitle">Mon avis</h3>
+                  <div id="reviewBookLabel" class="muted">Aucun livre selectionne.</div>
+                  <label for="reviewRating">Note</label>
+                  <select id="reviewRating">
+                    <option value="5">5 - Excellent</option>
+                    <option value="4">4 - Tres bien</option>
+                    <option value="3">3 - Correct</option>
+                    <option value="2">2 - Moyen</option>
+                    <option value="1">1 - Mauvais</option>
+                  </select>
+                  <label for="reviewComment">Commentaire</label>
+                  <textarea id="reviewComment">Lecture interessante.</textarea>
+                  <div class="row">
+                    <button id="saveReviewBtn">Sauver l'avis</button>
+                    <button id="clearReviewBtn" class="secondary">Vider</button>
+                  </div>
+                  <p id="reviewMsg" class="status"></p>
+                </div>
+                <div class="soft stack">
+                  <div class="row" style="justify-content:space-between">
+                    <h3>Avis du livre</h3>
+                    <button id="reloadReviewsBtn" class="secondary">Rafraichir</button>
+                  </div>
+                  <div id="reviewList" class="list"></div>
+                </div>
+              </div>
+            </section>
           </div>
 
           <div class="panel stack">
@@ -472,7 +504,9 @@ export class FrontendController {
       selectedClub: null,
       members: [],
       books: [],
+      reviews: [],
       selectedBook: null,
+      selectedReview: null,
       membership: null
     };
 
@@ -604,9 +638,11 @@ export class FrontendController {
       el('createBookBtn').disabled = !canEditBooks();
       el('updateBookBtn').disabled = !canEditBooks() || !state.selectedBook;
       el('saveProgressBtn').disabled = !canSaveOwnProgress();
+      el('saveReviewBtn').disabled = !role() || !state.selectedBook;
       renderMembers();
       renderBooks();
       renderProgress([]);
+      renderReviews();
     }
 
     function rightsText() {
@@ -658,7 +694,7 @@ export class FrontendController {
         item.className = 'item' + (state.selectedBook && state.selectedBook.id === book.id ? ' selected' : '');
         item.innerHTML = '<strong></strong><div class="muted"></div><div class="row"><span class="pill"></span><button class="secondary">Selectionner</button><button class="danger">Supprimer</button></div>';
         item.querySelector('strong').textContent = book.title;
-        item.querySelector('.muted').textContent = book.author + (book.genre ? ' - ' + book.genre : '');
+        item.querySelector('.muted').textContent = book.author + (book.genre ? ' - ' + book.genre : '') + (book.averageRating ? ' - note ' + Number(book.averageRating).toFixed(1) + '/5' : '');
         item.querySelector('.pill').textContent = book.pageCount ? book.pageCount + ' pages' : 'pages ?';
         const buttons = item.querySelectorAll('button');
         buttons[0].addEventListener('click', () => selectBook(book));
@@ -687,6 +723,40 @@ export class FrontendController {
         row.querySelector('.muted').textContent = item.currentPage + '/' + (item.totalPages || '?') + ' pages - ' + item.status;
         row.querySelector('.pill').textContent = item.progressPercent + '%';
         list.appendChild(row);
+      });
+    }
+
+    function renderReviews() {
+      const list = el('reviewList');
+      list.innerHTML = '';
+      if (!state.selectedBook) {
+        list.innerHTML = '<p class="muted">Selectionne un livre.</p>';
+        return;
+      }
+      if (!role()) {
+        list.innerHTML = '<p class="muted">Tu dois etre membre ou admin pour voir les avis.</p>';
+        return;
+      }
+      if (!state.reviews.length) {
+        list.innerHTML = '<p class="muted">Aucun avis pour ce livre.</p>';
+        return;
+      }
+
+      state.reviews.forEach((review) => {
+        const canManage = isAdmin() || (state.user && review.userId === state.user.id);
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = '<strong></strong><div class="muted"></div><p class="muted"></p><div class="row"><span class="pill"></span><button class="secondary">Modifier</button><button class="danger">Supprimer</button></div>';
+        item.querySelector('strong').textContent = review.user && (review.user.name || review.user.email) ? (review.user.name || review.user.email) : review.userId;
+        item.querySelectorAll('.muted')[0].textContent = review.user && review.user.email ? review.user.email : '';
+        item.querySelectorAll('.muted')[1].textContent = review.comment || 'Sans commentaire';
+        item.querySelector('.pill').textContent = review.rating + '/5';
+        const buttons = item.querySelectorAll('button');
+        buttons[0].disabled = !canManage;
+        buttons[1].disabled = !canManage;
+        buttons[0].addEventListener('click', () => selectReview(review));
+        buttons[1].addEventListener('click', () => deleteReview(review.id));
+        list.appendChild(item);
       });
     }
 
@@ -756,6 +826,7 @@ export class FrontendController {
       state.selectedBook = null;
       state.members = [];
       state.books = [];
+      state.reviews = [];
       state.membership = null;
       el('editClubName').value = club.name;
       el('editClubDescription').value = club.description || '';
@@ -799,6 +870,13 @@ export class FrontendController {
       try {
         const result = await request('/clubs/' + state.selectedClub.id + '/books' + bookQuery());
         state.books = result.data || [];
+        if (state.selectedBook) {
+          const refreshed = state.books.find((book) => book.id === state.selectedBook.id);
+          if (refreshed) {
+            state.selectedBook = refreshed;
+            updateSelectedBookLabels();
+          }
+        }
         renderBooks();
       } catch (error) {
         state.books = [];
@@ -809,6 +887,7 @@ export class FrontendController {
 
     function selectBook(book) {
       state.selectedBook = book;
+      state.selectedReview = null;
       el('bookFormTitle').textContent = 'Modifier le livre selectionne';
       el('bookTitle').value = book.title;
       el('bookAuthor').value = book.author;
@@ -818,11 +897,23 @@ export class FrontendController {
       el('bookDescription').value = book.description || '';
       el('selectedBookLabel').textContent = book.title + ' - ' + (book.pageCount || '?') + ' pages';
       el('totalPages').value = book.pageCount || '';
+      updateSelectedBookLabels();
+      clearReviewForm(false);
       renderWorkspace();
+      loadReviews();
+    }
+
+    function updateSelectedBookLabels() {
+      if (!state.selectedBook) return;
+      el('selectedBookLabel').textContent = state.selectedBook.title + ' - ' + (state.selectedBook.pageCount || '?') + ' pages';
+      el('totalPages').value = state.selectedBook.pageCount || '';
+      el('reviewBookLabel').textContent = state.selectedBook.title + (state.selectedBook.averageRating ? ' - moyenne ' + Number(state.selectedBook.averageRating).toFixed(1) + '/5' : ' - pas encore de moyenne');
     }
 
     function clearBookForm() {
       state.selectedBook = null;
+      state.selectedReview = null;
+      state.reviews = [];
       el('bookFormTitle').textContent = 'Ajouter un livre';
       el('bookTitle').value = 'Le Petit Prince';
       el('bookAuthor').value = 'Antoine de Saint-Exupery';
@@ -831,7 +922,25 @@ export class FrontendController {
       el('bookIsbn').value = '';
       el('bookDescription').value = 'Un classique a lire ensemble.';
       el('selectedBookLabel').textContent = 'Aucun livre selectionne.';
+      el('reviewBookLabel').textContent = 'Aucun livre selectionne.';
       renderWorkspace();
+    }
+
+    function selectReview(review) {
+      state.selectedReview = review;
+      el('reviewFormTitle').textContent = 'Modifier un avis';
+      el('reviewRating').value = String(review.rating);
+      el('reviewComment').value = review.comment || '';
+      message('reviewMsg', 'Avis charge dans le formulaire.', 'ok');
+    }
+
+    function clearReviewForm(resetSelected) {
+      if (resetSelected !== false) {
+        state.selectedReview = null;
+      }
+      el('reviewFormTitle').textContent = 'Mon avis';
+      el('reviewRating').value = '5';
+      el('reviewComment').value = 'Lecture interessante.';
     }
 
     async function login() {
@@ -1131,6 +1240,64 @@ export class FrontendController {
       }
     }
 
+    async function loadReviews() {
+      if (!state.selectedBook) {
+        message('reviewMsg', 'Selectionne un livre.', 'error');
+        return;
+      }
+      try {
+        state.reviews = await request('/clubs/' + state.selectedClub.id + '/books/' + state.selectedBook.id + '/reviews');
+        renderReviews();
+        message('reviewMsg', 'Avis charges.', 'ok');
+      } catch (error) {
+        state.reviews = [];
+        renderReviews();
+        message('reviewMsg', error.message, 'error');
+      }
+    }
+
+    async function saveReview() {
+      if (!state.selectedBook) {
+        message('reviewMsg', 'Selectionne un livre.', 'error');
+        return;
+      }
+      try {
+        const ownReview = state.reviews.find((review) => state.user && review.userId === state.user.id);
+        const reviewToUpdate = state.selectedReview || ownReview;
+        const payload = {
+          rating: Number(el('reviewRating').value),
+          comment: el('reviewComment').value
+        };
+        const path = '/clubs/' + state.selectedClub.id + '/books/' + state.selectedBook.id + '/reviews' + (reviewToUpdate ? '/' + reviewToUpdate.id : '');
+        const method = reviewToUpdate ? 'PATCH' : 'POST';
+        const review = await request(path, {
+          method,
+          body: JSON.stringify(payload)
+        });
+        state.selectedReview = review;
+        message('reviewMsg', reviewToUpdate ? 'Avis modifie.' : 'Avis cree.', 'ok');
+        await loadReviews();
+        await loadBooks();
+      } catch (error) {
+        message('reviewMsg', error.message, 'error');
+      }
+    }
+
+    async function deleteReview(reviewId) {
+      if (!confirm('Supprimer cet avis ?')) return;
+      try {
+        await request('/clubs/' + state.selectedClub.id + '/books/' + state.selectedBook.id + '/reviews/' + reviewId, { method: 'DELETE' });
+        if (state.selectedReview && state.selectedReview.id === reviewId) {
+          clearReviewForm();
+        }
+        message('reviewMsg', 'Avis supprime.', 'ok');
+        await loadReviews();
+        await loadBooks();
+      } catch (error) {
+        message('reviewMsg', error.message, 'error');
+      }
+    }
+
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
       document.querySelectorAll('.tabPanel').forEach((panel) => panel.classList.add('hidden'));
@@ -1157,6 +1324,9 @@ export class FrontendController {
     el('filterBooksBtn').addEventListener('click', loadBooks);
     el('saveProgressBtn').addEventListener('click', saveProgress);
     el('reloadProgressBtn').addEventListener('click', loadProgress);
+    el('saveReviewBtn').addEventListener('click', saveReview);
+    el('clearReviewBtn').addEventListener('click', () => clearReviewForm());
+    el('reloadReviewsBtn').addEventListener('click', loadReviews);
 
     refreshClubs();
   </script>
