@@ -1,4 +1,5 @@
 import { Transform } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
@@ -16,12 +17,14 @@ const trimLowerCase = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
 
 export class CreateUserDto {
+  @ApiProperty({ example: 'reader@test.com' })
   @Transform(trimLowerCase)
   @IsEmail({}, { message: 'Must be a valid email address' })
   @IsNotEmpty()
   @MaxLength(255)
   email: string;
 
+  @ApiProperty({ example: 'Alice' })
   @Transform(trimLowerCase)
   @IsString()
   @IsNotEmpty()
@@ -30,6 +33,7 @@ export class CreateUserDto {
   @Matches(NAME_REGEX, { message: NAME_MESSAGE })
   firstName: string;
 
+  @ApiProperty({ example: 'Martin' })
   @Transform(trimLowerCase)
   @IsString()
   @IsNotEmpty()

@@ -1,4 +1,10 @@
 import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DeleteRoute } from '../common/decorators/delete-route.decorator';
 import { UUIDParam } from '../common/decorators/uuid-param.decorator';
@@ -11,10 +17,15 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 
 @Controller('clubs/:clubId/books')
+@ApiTags('Livres')
+@ApiCookieAuth('bookshelf.session_token')
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
   @Post()
+  @ApiOperation({
+    summary: 'Ajouter un livre au club (OWNER, EDITOR ou ADMIN)',
+  })
   create(
     @UUIDParam('clubId') clubId: string,
     @Body() dto: CreateBookDto,
@@ -24,6 +35,12 @@ export class BooksController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'Lister les livres du club avec filtres et pagination',
+  })
+  @ApiQuery({ name: 'title', required: false })
+  @ApiQuery({ name: 'author', required: false })
+  @ApiQuery({ name: 'genre', required: false })
   findAll(
     @UUIDParam('clubId') clubId: string,
     @Query(OffsetPaginationPipe) pagination: OffsetPaginationParams,
@@ -37,6 +54,7 @@ export class BooksController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Consulter un livre du club' })
   findOne(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('id') id: string,
@@ -46,6 +64,7 @@ export class BooksController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Modifier un livre (OWNER, EDITOR ou ADMIN)' })
   update(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('id') id: string,
@@ -56,6 +75,7 @@ export class BooksController {
   }
 
   @DeleteRoute()
+  @ApiOperation({ summary: 'Supprimer un livre (OWNER, EDITOR ou ADMIN)' })
   remove(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('id') id: string,

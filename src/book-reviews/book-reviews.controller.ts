@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DeleteRoute } from '../common/decorators/delete-route.decorator';
 import { UUIDParam } from '../common/decorators/uuid-param.decorator';
@@ -8,10 +9,13 @@ import { CreateBookReviewDto } from './dto/create-book-review.dto';
 import { UpdateBookReviewDto } from './dto/update-book-review.dto';
 
 @Controller('clubs/:clubId/books/:bookId/reviews')
+@ApiTags('Avis')
+@ApiCookieAuth('bookshelf.session_token')
 export class BookReviewsController {
   constructor(private readonly bookReviewsService: BookReviewsService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Lister les avis d un livre' })
   findAll(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('bookId') bookId: string,
@@ -21,6 +25,7 @@ export class BookReviewsController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Creer mon avis sur un livre' })
   create(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('bookId') bookId: string,
@@ -31,6 +36,7 @@ export class BookReviewsController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Modifier un avis (auteur ou ADMIN)' })
   update(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('bookId') bookId: string,
@@ -42,6 +48,7 @@ export class BookReviewsController {
   }
 
   @DeleteRoute()
+  @ApiOperation({ summary: 'Supprimer un avis (auteur ou ADMIN)' })
   remove(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('bookId') bookId: string,

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UUIDParam } from '../common/decorators/uuid-param.decorator';
 import type { AuthUser } from '../common/types/auth-user';
@@ -6,10 +7,13 @@ import { ProgressService } from './progress.service';
 import { UpdateReadingProgressDto } from './dto/update-reading-progress.dto';
 
 @Controller('clubs/:clubId/books/:bookId/progress')
+@ApiTags('Progression')
+@ApiCookieAuth('bookshelf.session_token')
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Patch('me')
+  @ApiOperation({ summary: 'Mettre a jour ma progression sur un livre' })
   updateMine(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('bookId') bookId: string,
@@ -20,6 +24,10 @@ export class ProgressController {
   }
 
   @Get()
+  @ApiOperation({
+    summary:
+      'Consulter la progression globale du livre (OWNER, EDITOR ou ADMIN)',
+  })
   findForBook(
     @UUIDParam('clubId') clubId: string,
     @UUIDParam('bookId') bookId: string,
