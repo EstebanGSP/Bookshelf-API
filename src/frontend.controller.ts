@@ -354,6 +354,16 @@ export class FrontendController {
                   <div id="memberList" class="list"></div>
                 </div>
               </div>
+              <div class="soft stack">
+                <h3>Import CSV de membres</h3>
+                <p class="muted">Colonnes attendues: email,role. Roles possibles: OWNER, EDITOR, READER.</p>
+                <textarea id="memberCsv" style="min-height:130px">email,role
+reader-csv@test.com,READER
+editor-csv@test.com,EDITOR</textarea>
+                <button id="importMembersBtn">Importer les membres</button>
+                <p id="memberImportMsg" class="status"></p>
+                <pre id="memberImportOutput">Aucun import.</pre>
+              </div>
             </section>
 
             <section id="tab-books" class="tabPanel hidden stack">
@@ -490,6 +500,16 @@ export class FrontendController {
             <div id="adminClubList" class="list"></div>
             <p id="adminClubMsg" class="status"></p>
           </div>
+        </div>
+        <div class="soft stack">
+          <h3>Import CSV catalogue livres</h3>
+          <p class="muted">Colonnes attendues: isbn,title,author,genre,pageCount,description,publishedAt.</p>
+          <textarea id="catalogCsv" style="min-height:150px">isbn,title,author,genre,pageCount,description,publishedAt
+9782070612758,Le Petit Prince,Antoine de Saint-Exupery,Conte,120,Un classique,1943-04-06
+9782070360024,L'Etranger,Albert Camus,Roman,186,Un roman majeur,1942-01-01</textarea>
+          <button id="importCatalogBtn">Importer le catalogue</button>
+          <p id="catalogImportMsg" class="status"></p>
+          <pre id="catalogImportOutput">Aucun import.</pre>
         </div>
       </div>
     </section>
@@ -1043,6 +1063,19 @@ export class FrontendController {
       }
     }
 
+    async function importCatalogBooks() {
+      try {
+        const report = await request('/admin/imports/catalog-books', {
+          method: 'POST',
+          body: JSON.stringify({ csv: el('catalogCsv').value })
+        });
+        el('catalogImportOutput').textContent = JSON.stringify(report, null, 2);
+        message('catalogImportMsg', report.errors.length ? 'Import annule: corrige les erreurs.' : report.imported + ' livre(s) importe(s).', report.errors.length ? 'error' : 'ok');
+      } catch (error) {
+        message('catalogImportMsg', error.message, 'error');
+      }
+    }
+
     async function deleteAdminClub(clubId) {
       if (!confirm('Supprimer ce club en tant qu admin ?')) return;
       try {
@@ -1123,6 +1156,25 @@ export class FrontendController {
         await refreshClubs();
       } catch (error) {
         message('memberMsg', error.message, 'error');
+      }
+    }
+
+    async function importMembers() {
+      if (!state.selectedClub) {
+        message('memberImportMsg', 'Selectionne un club.', 'error');
+        return;
+      }
+      try {
+        const report = await request('/clubs/' + state.selectedClub.id + '/imports/members', {
+          method: 'POST',
+          body: JSON.stringify({ csv: el('memberCsv').value })
+        });
+        el('memberImportOutput').textContent = JSON.stringify(report, null, 2);
+        message('memberImportMsg', report.errors.length ? 'Import annule: corrige les erreurs.' : report.imported + ' ligne(s) importee(s).', report.errors.length ? 'error' : 'ok');
+        await loadMembers();
+        await refreshClubs();
+      } catch (error) {
+        message('memberImportMsg', error.message, 'error');
       }
     }
 
@@ -1312,11 +1364,13 @@ export class FrontendController {
     el('leaveAdminBtn').addEventListener('click', showAppMode);
     el('reloadUsersBtn').addEventListener('click', loadAdminUsers);
     el('reloadAdminClubsBtn').addEventListener('click', refreshClubs);
+    el('importCatalogBtn').addEventListener('click', importCatalogBooks);
     el('reloadClubsBtn').addEventListener('click', refreshClubs);
     el('createClubBtn').addEventListener('click', createClub);
     el('updateClubBtn').addEventListener('click', updateClub);
     el('deleteClubBtn').addEventListener('click', deleteClub);
     el('inviteBtn').addEventListener('click', inviteMember);
+    el('importMembersBtn').addEventListener('click', importMembers);
     el('createBookBtn').addEventListener('click', createBook);
     el('updateBookBtn').addEventListener('click', updateBook);
     el('clearBookBtn').addEventListener('click', clearBookForm);

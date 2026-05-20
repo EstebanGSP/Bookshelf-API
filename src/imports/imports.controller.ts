@@ -1,6 +1,8 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UUIDParam } from '../common/decorators/uuid-param.decorator';
+import type { AuthUser } from '../common/types/auth-user';
 import { ImportCsvDto } from './dto/import-csv.dto';
 import { ImportsService } from './imports.service';
 
@@ -18,7 +20,8 @@ export class ImportsController {
   importClubMembers(
     @UUIDParam('clubId') clubId: string,
     @Body() dto: ImportCsvDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.importsService.importClubMembers(clubId, dto);
+    return this.importsService.importClubMembers(clubId, dto, user);
   }
 }
