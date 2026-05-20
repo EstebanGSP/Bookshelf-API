@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Header, Post } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UUIDParam } from '../common/decorators/uuid-param.decorator';
@@ -16,6 +16,14 @@ export class ImportsController {
     return this.importsService.importCatalogBooks(dto);
   }
 
+  @Get('admin/exports/catalog-books')
+  @Roles('ADMIN')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="catalog-books.csv"')
+  exportCatalogBooks() {
+    return this.importsService.exportCatalogBooks();
+  }
+
   @Post('clubs/:clubId/imports/members')
   importClubMembers(
     @UUIDParam('clubId') clubId: string,
@@ -23,5 +31,15 @@ export class ImportsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.importsService.importClubMembers(clubId, dto, user);
+  }
+
+  @Get('clubs/:clubId/exports/books')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="club-books.csv"')
+  exportClubBooks(
+    @UUIDParam('clubId') clubId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.importsService.exportClubBooks(clubId, user);
   }
 }

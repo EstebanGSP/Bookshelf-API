@@ -360,7 +360,10 @@ export class FrontendController {
                 <textarea id="memberCsv" style="min-height:130px">email,role
 reader-csv@test.com,READER
 editor-csv@test.com,EDITOR</textarea>
-                <button id="importMembersBtn">Importer les membres</button>
+                <div class="row">
+                  <button id="importMembersBtn">Importer les membres</button>
+                  <button id="exportClubBooksFromMembersBtn" class="secondary">Exporter les livres</button>
+                </div>
                 <p id="memberImportMsg" class="status"></p>
                 <pre id="memberImportOutput">Aucun import.</pre>
               </div>
@@ -392,7 +395,10 @@ editor-csv@test.com,EDITOR</textarea>
                 <div class="soft stack">
                   <div class="row" style="justify-content:space-between">
                     <h3>Livres du club</h3>
-                    <button id="reloadBooksBtn" class="secondary">Rafraichir</button>
+                    <div class="row">
+                      <button id="reloadBooksBtn" class="secondary">Rafraichir</button>
+                      <button id="exportClubBooksBtn" class="secondary">Exporter CSV</button>
+                    </div>
                   </div>
                   <div class="grid-3">
                     <input id="filterTitle" placeholder="Titre" />
@@ -507,7 +513,10 @@ editor-csv@test.com,EDITOR</textarea>
           <textarea id="catalogCsv" style="min-height:150px">isbn,title,author,genre,pageCount,description,publishedAt
 9782070612758,Le Petit Prince,Antoine de Saint-Exupery,Conte,120,Un classique,1943-04-06
 9782070360024,L'Etranger,Albert Camus,Roman,186,Un roman majeur,1942-01-01</textarea>
-          <button id="importCatalogBtn">Importer le catalogue</button>
+          <div class="row">
+            <button id="importCatalogBtn">Importer le catalogue</button>
+            <button id="exportCatalogBtn" class="secondary">Exporter le catalogue</button>
+          </div>
           <p id="catalogImportMsg" class="status"></p>
           <pre id="catalogImportOutput">Aucun import.</pre>
         </div>
@@ -567,6 +576,27 @@ editor-csv@test.com,EDITOR</textarea>
       showOutput(body);
       if (!response.ok) throw new Error(friendlyError(path, response, body));
       return body;
+    }
+
+    async function downloadCsv(path, filename) {
+      const response = await fetch(api + path, { credentials: 'include' });
+      const text = await response.text();
+      if (!response.ok) {
+        let body = text;
+        try { body = text ? JSON.parse(text) : null; } catch (_) {}
+        throw new Error(friendlyError(path, response, body));
+      }
+
+      const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showOutput(text);
     }
 
     function role() {
@@ -1076,6 +1106,15 @@ editor-csv@test.com,EDITOR</textarea>
       }
     }
 
+    async function exportCatalogBooks() {
+      try {
+        await downloadCsv('/admin/exports/catalog-books', 'catalog-books.csv');
+        message('catalogImportMsg', 'Export catalogue telecharge.', 'ok');
+      } catch (error) {
+        message('catalogImportMsg', error.message, 'error');
+      }
+    }
+
     async function deleteAdminClub(clubId) {
       if (!confirm('Supprimer ce club en tant qu admin ?')) return;
       try {
@@ -1174,6 +1213,22 @@ editor-csv@test.com,EDITOR</textarea>
         await loadMembers();
         await refreshClubs();
       } catch (error) {
+        message('memberImportMsg', error.message, 'error');
+      }
+    }
+
+    async function exportClubBooks() {
+      if (!state.selectedClub) {
+        message('bookMsg', 'Selectionne un club.', 'error');
+        message('memberImportMsg', 'Selectionne un club.', 'error');
+        return;
+      }
+      try {
+        await downloadCsv('/clubs/' + state.selectedClub.id + '/exports/books', 'club-books.csv');
+        message('bookMsg', 'Export livres telecharge.', 'ok');
+        message('memberImportMsg', 'Export livres telecharge.', 'ok');
+      } catch (error) {
+        message('bookMsg', error.message, 'error');
         message('memberImportMsg', error.message, 'error');
       }
     }
@@ -1365,16 +1420,19 @@ editor-csv@test.com,EDITOR</textarea>
     el('reloadUsersBtn').addEventListener('click', loadAdminUsers);
     el('reloadAdminClubsBtn').addEventListener('click', refreshClubs);
     el('importCatalogBtn').addEventListener('click', importCatalogBooks);
+    el('exportCatalogBtn').addEventListener('click', exportCatalogBooks);
     el('reloadClubsBtn').addEventListener('click', refreshClubs);
     el('createClubBtn').addEventListener('click', createClub);
     el('updateClubBtn').addEventListener('click', updateClub);
     el('deleteClubBtn').addEventListener('click', deleteClub);
     el('inviteBtn').addEventListener('click', inviteMember);
     el('importMembersBtn').addEventListener('click', importMembers);
+    el('exportClubBooksFromMembersBtn').addEventListener('click', exportClubBooks);
     el('createBookBtn').addEventListener('click', createBook);
     el('updateBookBtn').addEventListener('click', updateBook);
     el('clearBookBtn').addEventListener('click', clearBookForm);
     el('reloadBooksBtn').addEventListener('click', loadBooks);
+    el('exportClubBooksBtn').addEventListener('click', exportClubBooks);
     el('filterBooksBtn').addEventListener('click', loadBooks);
     el('saveProgressBtn').addEventListener('click', saveProgress);
     el('reloadProgressBtn').addEventListener('click', loadProgress);

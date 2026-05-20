@@ -99,6 +99,42 @@ export class ImportsService {
     return { imported: rows.length, errors: [] };
   }
 
+  async exportCatalogBooks() {
+    const books = await this.prisma.catalogBook.findMany({
+      orderBy: [{ title: 'asc' }, { author: 'asc' }],
+      select: {
+        isbn: true,
+        title: true,
+        author: true,
+        genre: true,
+        pageCount: true,
+        description: true,
+        publishedAt: true,
+      },
+    });
+
+    return this.toCsv(
+      [
+        'isbn',
+        'title',
+        'author',
+        'genre',
+        'pageCount',
+        'description',
+        'publishedAt',
+      ],
+      books.map((book) => ({
+        isbn: book.isbn,
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        pageCount: book.pageCount,
+        description: book.description,
+        publishedAt: this.formatDate(book.publishedAt),
+      })),
+    );
+  }
+
   async importClubMembers(
     clubId: string,
     dto: ImportCsvDto,
@@ -206,6 +242,44 @@ export class ImportsService {
     return { imported: rows.length, errors: [] };
   }
 
+  async exportClubBooks(clubId: string, actor: AuthUser) {
+    await this.ensureCanExportClubBooks(clubId, actor);
+    const books = await this.prisma.book.findMany({
+      where: { clubId },
+      orderBy: [{ title: 'asc' }, { author: 'asc' }],
+      select: {
+        isbn: true,
+        title: true,
+        author: true,
+        genre: true,
+        pageCount: true,
+        description: true,
+        createdAt: true,
+      },
+    });
+
+    return this.toCsv(
+      [
+        'isbn',
+        'title',
+        'author',
+        'genre',
+        'pageCount',
+        'description',
+        'createdAt',
+      ],
+      books.map((book) => ({
+        isbn: book.isbn,
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        pageCount: book.pageCount,
+        description: book.description,
+        createdAt: this.formatDate(book.createdAt),
+      })),
+    );
+  }
+
   private async ensureCanImportMembers(clubId: string, actor: AuthUser) {
     const club = await this.prisma.club.findUnique({ where: { id: clubId } });
     if (!club) {
@@ -220,6 +294,23 @@ export class ImportsService {
     });
     if (membership?.role !== ClubRole.OWNER) {
       throw new ForbiddenException('Only club owners can import members');
+    }
+  }
+
+  private async ensureCanExportClubBooks(clubId: string, actor: AuthUser) {
+    const club = await this.prisma.club.findUnique({ where: { id: clubId } });
+    if (!club) {
+      throw new NotFoundException(`Club ${clubId} not found`);
+    }
+    if (actor.role === 'ADMIN') {
+      return;
+    }
+
+    const membership = await this.prisma.clubMember.findUnique({
+      where: { userId_clubId: { userId: actor.id, clubId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('Only club members can export club books');
     }
   }
 
@@ -401,5 +492,30 @@ export class ImportsService {
       return null;
     }
     return parsed;
+  }
+
+  private toCsv(headers: string[], rows: Array<Record<string, unknown>>) {
+    const lines = [
+      headers.join(','),
+      ...rows.map((row) =>
+        headers.map((header) => this.escapeCsvValue(row[header])).join(','),
+      ),
+    ];
+    return lines.join('\n');
+  }
+
+  private escapeCsvValue(value: unknown) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const text = String(value);
+    if (/[",\n\r]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  }
+
+  private formatDate(value: Date | null) {
+    return value ? value.toISOString().slice(0, 10) : null;
   }
 }
