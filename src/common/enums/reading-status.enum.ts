@@ -1,0 +1,6 @@
+export enum ReadingStatus {
+  NOT_STARTED = 'NOT_STARTED',
+  READING = 'READING',
+  COMPLETED = 'COMPLETED',
+  ABANDONED = 'ABANDONED',
+}

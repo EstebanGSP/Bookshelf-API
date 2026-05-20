@@ -1,0 +1,251 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ClubRole {
+  OWNER
+  EDITOR
+  READER
+}
+
+enum ReadingStatus {
+  NOT_STARTED
+  READING
+  COMPLETED
+  ABANDONED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique @db.VarChar(255)
+  name          String    @default("") @db.VarChar(255)
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("USER") @db.VarChar(50)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  firstName     String?   @db.VarChar(100)
+  lastName      String?   @db.VarChar(100)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  clubMembers   ClubMember[]
+  invitations   ClubInvitation[] @relation("InvitedUser")
+  sentInvites   ClubInvitation[] @relation("InvitedBy")
+  booksCreated  Book[]           @relation("BookCreatedBy")
+  progressItems ReadingProgress[]
+  reviews       BookReview[]
+
+  @@map("users")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String    @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model Jwks {
+  id         String    @id
+  publicKey  String    @db.Text
+  privateKey String    @db.Text
+  createdAt  DateTime
+  expiresAt  DateTime?
+
+  @@map("jwks")
+}
+
+model Club {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(160)
+  description String?  @db.Text
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     ClubMember[]
+  invitations ClubInvitation[]
+  books       Book[]
+
+  @@index([isPublic, createdAt])
+  @@map("clubs")
+}
+
+model ClubMember {
+  id        String   @id @default(uuid())
+  role      ClubRole @default(READER)
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clubId String
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  progressItems ReadingProgress[]
+
+  @@unique([userId, clubId])
+  @@index([clubId, role])
+  @@map("club_members")
+}
+
+model ClubInvitation {
+  id        String   @id @default(uuid())
+  email     String   @db.VarChar(255)
+  role      ClubRole @default(READER)
+  accepted  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  clubId String
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  invitedUserId String?
+  invitedUser   User?   @relation("InvitedUser", fields: [invitedUserId], references: [id], onDelete: SetNull)
+
+  invitedById String
+  invitedBy   User   @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+
+  @@unique([clubId, email])
+  @@index([email])
+  @@map("club_invitations")
+}
+
+model CatalogBook {
+  id          String    @id @default(uuid())
+  isbn        String?   @unique @db.VarChar(32)
+  title       String    @db.VarChar(255)
+  author      String    @db.VarChar(180)
+  genre       String?   @db.VarChar(100)
+  description String?   @db.Text
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  clubBooks Book[]
+
+  @@index([title])
+  @@index([author])
+  @@map("catalog_books")
+}
+
+model Book {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255)
+  author      String   @db.VarChar(180)
+  isbn        String?  @db.VarChar(32)
+  genre       String?  @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clubId String
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  catalogBookId String?
+  catalogBook   CatalogBook? @relation(fields: [catalogBookId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("BookCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  progressItems ReadingProgress[]
+  reviews       BookReview[]
+
+  @@unique([clubId, isbn])
+  @@index([clubId, title])
+  @@index([genre])
+  @@map("books")
+}
+
+model ReadingProgress {
+  id              String        @id @default(uuid())
+  status          ReadingStatus @default(NOT_STARTED)
+  currentPage     Int           @default(0)
+  totalPages      Int?
+  progressPercent Int           @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clubMemberId String
+  clubMember   ClubMember @relation(fields: [clubMemberId], references: [id], onDelete: Cascade)
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([bookId])
+  @@map("reading_progress")
+}
+
+model BookReview {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([bookId])
+  @@map("book_reviews")
+}
