@@ -407,8 +407,8 @@ export class FrontendController {
                   </select>
                   <label for="currentPage">Page actuelle</label>
                   <input id="currentPage" type="number" min="0" value="0" />
-                  <label for="totalPages">Pages totales</label>
-                  <input id="totalPages" type="number" min="1" value="120" />
+                  <label for="totalPages">Pages du livre</label>
+                  <input id="totalPages" type="number" readonly value="" />
                   <button id="saveProgressBtn">Sauver</button>
                   <p id="progressMsg" class="status"></p>
                 </div>
@@ -943,7 +943,6 @@ export class FrontendController {
           body: JSON.stringify({
             status: el('progressStatus').value,
             currentPage: Number(el('currentPage').value),
-            totalPages: Number(el('totalPages').value)
           })
         });
         message('progressMsg', 'Progression sauvegardee: ' + progress.progressPercent + '% - ' + progress.status, 'ok');

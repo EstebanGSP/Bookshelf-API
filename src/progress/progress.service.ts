@@ -25,19 +25,23 @@ export class ProgressService {
       userId,
     );
     const existing = await this.progress.findMine(userId, bookId);
-    const totalPages =
-      dto.totalPages ?? existing?.totalPages ?? book.pageCount ?? null;
-    const currentPage = dto.currentPage ?? existing?.currentPage ?? 0;
+    const totalPages = book.pageCount;
+    if (!totalPages) {
+      throw new BadRequestException(
+        'Book pageCount is required before tracking progress',
+      );
+    }
 
-    if (totalPages !== null && currentPage > totalPages) {
+    let currentPage = dto.currentPage ?? existing?.currentPage ?? 0;
+    if (dto.status === ReadingStatus.COMPLETED) {
+      currentPage = totalPages;
+    }
+
+    if (currentPage > totalPages) {
       throw new BadRequestException('currentPage cannot exceed totalPages');
     }
 
-    const progressPercent =
-      dto.progressPercent ??
-      this.computePercent(currentPage, totalPages) ??
-      existing?.progressPercent ??
-      0;
+    const progressPercent = this.computePercent(currentPage, totalPages);
 
     const status = this.resolveStatus(
       dto.status as ReadingStatus | undefined,
@@ -97,10 +101,7 @@ export class ProgressService {
     return { membership, book };
   }
 
-  private computePercent(currentPage: number, totalPages: number | null) {
-    if (!totalPages) {
-      return null;
-    }
+  private computePercent(currentPage: number, totalPages: number) {
     return Math.min(100, Math.round((currentPage / totalPages) * 100));
   }
 
@@ -115,6 +116,9 @@ export class ProgressService {
     }
     if (requested === ReadingStatus.COMPLETED || progressPercent >= 100) {
       return ReadingStatus.COMPLETED;
+    }
+    if (requested === ReadingStatus.READING) {
+      return ReadingStatus.READING;
     }
     if (currentPage > 0 || progressPercent > 0) {
       return ReadingStatus.READING;

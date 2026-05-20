@@ -32,10 +32,9 @@ export class CreateBookDto {
   @MaxLength(100)
   genre?: string;
 
-  @IsOptional()
   @IsInt()
   @Min(1)
-  pageCount?: number;
+  pageCount: number;
 
   @IsOptional()
   @IsString()
