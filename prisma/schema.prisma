@@ -167,6 +167,7 @@ model CatalogBook {
   title       String    @db.VarChar(255)
   author      String    @db.VarChar(180)
   genre       String?   @db.VarChar(100)
+  pageCount   Int?
   description String?   @db.Text
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -185,6 +186,7 @@ model Book {
   author      String   @db.VarChar(180)
   isbn        String?  @db.VarChar(32)
   genre       String?  @db.VarChar(100)
+  pageCount   Int?
   description String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

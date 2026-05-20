@@ -1,5 +1,12 @@
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateBookDto {
   @Transform(({ value }: { value: unknown }) =>
@@ -24,6 +31,11 @@ export class CreateBookDto {
   @IsString()
   @MaxLength(100)
   genre?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  pageCount?: number;
 
   @IsOptional()
   @IsString()

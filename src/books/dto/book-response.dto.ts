@@ -7,6 +7,7 @@ export class BookResponseDto {
   author!: string;
   isbn!: string | null;
   genre!: string | null;
+  pageCount!: number | null;
   averageRating!: number | null;
   createdAt!: Date;
   updatedAt!: Date;
@@ -19,6 +20,7 @@ export class BookResponseDto {
     dto.author = book.author;
     dto.isbn = book.isbn;
     dto.genre = book.genre;
+    dto.pageCount = book.pageCount;
     dto.averageRating = averageRating;
     dto.createdAt = book.createdAt;
     dto.updatedAt = book.updatedAt;

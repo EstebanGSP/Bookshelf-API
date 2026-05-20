@@ -29,6 +29,7 @@ export class BooksRepository {
         author: dto.author,
         isbn: this.optionalString(dto.isbn),
         genre: this.optionalString(dto.genre),
+        pageCount: dto.pageCount ?? null,
         description: this.optionalString(dto.description),
       },
     });
@@ -69,6 +70,7 @@ export class BooksRepository {
           dto.isbn === undefined ? undefined : this.optionalString(dto.isbn),
         genre:
           dto.genre === undefined ? undefined : this.optionalString(dto.genre),
+        pageCount: dto.pageCount,
         description:
           dto.description === undefined
             ? undefined

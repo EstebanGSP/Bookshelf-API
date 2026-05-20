@@ -197,7 +197,7 @@ export class FrontendController {
         <label for="name">Nom</label>
         <input id="name" value="Alice Reader" />
         <label for="email">Email</label>
-        <input id="email" value="alice@test.com" />
+        <input id="email" />
         <label for="password">Mot de passe</label>
         <input id="password" type="password" value="azertyuiop" />
         <div class="row" style="margin-top:14px">
@@ -227,7 +227,7 @@ export class FrontendController {
 
       <section>
         <h2>Membres</h2>
-        <p class="muted">Selectionne un club public pour gerer ses membres.</p>
+        <p class="muted">Pour gerer un club, connecte-toi avec son OWNER ou cree un nouveau club.</p>
         <label for="selectedClub">Club selectionne</label>
         <input id="selectedClub" readonly placeholder="Aucun club selectionne" />
         <label for="inviteEmail">Email a inviter</label>
@@ -253,6 +253,8 @@ export class FrontendController {
         <input id="bookAuthor" value="Antoine de Saint-Exupery" />
         <label for="bookGenre">Genre</label>
         <input id="bookGenre" value="Conte" />
+        <label for="bookPageCount">Nombre de pages</label>
+        <input id="bookPageCount" type="number" min="1" value="120" />
         <label for="bookIsbn">ISBN</label>
         <input id="bookIsbn" placeholder="Optionnel" />
         <label for="bookDescription">Description</label>
@@ -261,6 +263,29 @@ export class FrontendController {
           <button id="createBook">Ajouter le livre</button>
         </div>
         <p id="bookStatus" class="status"></p>
+      </section>
+
+      <section>
+        <h2>Progression</h2>
+        <p class="muted">Selectionne un livre pour suivre ta lecture.</p>
+        <label for="selectedBook">Livre selectionne</label>
+        <input id="selectedBook" readonly placeholder="Aucun livre selectionne" />
+        <label for="progressStatus">Statut</label>
+        <select id="progressStatus">
+          <option value="NOT_STARTED">NOT_STARTED</option>
+          <option value="READING">READING</option>
+          <option value="COMPLETED">COMPLETED</option>
+          <option value="ABANDONED">ABANDONED</option>
+        </select>
+        <label for="currentPage">Page actuelle</label>
+        <input id="currentPage" type="number" min="0" value="0" />
+        <label for="totalPages">Nombre total de pages</label>
+        <input id="totalPages" type="number" min="1" value="120" />
+        <div class="row" style="margin-top:14px">
+          <button id="saveProgress">Sauver progression</button>
+          <button id="refreshProgress" class="secondary">Voir global</button>
+        </div>
+        <p id="progressStatusText" class="status"></p>
       </section>
     </aside>
 
@@ -291,9 +316,15 @@ export class FrontendController {
       </section>
 
       <section>
+        <h2>Progression du livre</h2>
+        <div id="progressList" class="stack">
+          <p class="muted">Aucun livre selectionne.</p>
+        </div>
+      </section>
+
+      <section>
         <h2>Modules suivants</h2>
         <div class="stack">
-          <div class="todo"><strong>Progression</strong><br />Suivi personnel et vue globale OWNER/EDITOR.</div>
           <div class="todo"><strong>Avis</strong><br />Unicite par utilisateur et note moyenne.</div>
           <div class="todo"><strong>Admin / CSV</strong><br />Gestion utilisateurs et imports transactionnels.</div>
         </div>
@@ -310,6 +341,8 @@ export class FrontendController {
     const api = location.origin;
     let currentUser = null;
     let selectedClubId = null;
+    let selectedBookId = null;
+    const defaultEmail = 'reader-' + Date.now() + '@test.com';
 
     const $ = (id) => document.getElementById(id);
     const output = $('output');
@@ -317,7 +350,9 @@ export class FrontendController {
     const clubStatus = $('clubStatus');
     const memberStatus = $('memberStatus');
     const bookStatus = $('bookStatus');
+    const progressStatusText = $('progressStatusText');
     const sessionLabel = $('sessionLabel');
+    $('email').value = defaultEmail;
 
     function show(data) {
       output.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
@@ -335,9 +370,22 @@ export class FrontendController {
 
     function selectClub(club) {
       selectedClubId = club.id;
+      selectedBookId = null;
       $('selectedClub').value = club.name + ' (' + club.id + ')';
+      $('selectedBook').value = '';
       loadMembers().catch((error) => setStatus(memberStatus, error.message, 'error'));
       loadBooks().catch((error) => setStatus(bookStatus, error.message, 'error'));
+      loadProgress().catch((error) => setStatus(progressStatusText, error.message, 'error'));
+    }
+
+    function selectBook(book) {
+      selectedBookId = book.id;
+      $('selectedBook').value = book.title + ' (' + book.id + ')';
+      if (book.pageCount) {
+        $('totalPages').value = book.pageCount;
+      }
+      setStatus(progressStatusText, 'Livre selectionne.', 'ok');
+      loadProgress().catch((error) => setStatus(progressStatusText, error.message, 'error'));
     }
 
     async function request(path, options = {}) {
@@ -354,7 +402,19 @@ export class FrontendController {
       try { body = text ? JSON.parse(text) : null; } catch (_) {}
       show(body);
       if (!response.ok) {
-        const message = body?.message || body?.code || response.statusText;
+        let message = body?.message || body?.code || response.statusText;
+        if (response.status === 422 && path.includes('/auth/sign-up/email')) {
+          message = 'Inscription refusee: email deja utilise ou donnees invalides. Essaie Connexion ou change email.';
+        }
+        if (response.status === 403 && path.includes('/books')) {
+          message = 'Acces refuse: seuls les membres du club peuvent voir les livres, et seuls OWNER/EDITOR peuvent les modifier.';
+        }
+        if (response.status === 403 && path.includes('/members')) {
+          message = 'Acces refuse: seul un OWNER du club peut gerer les membres.';
+        }
+        if (response.status === 400 && path.includes('/members')) {
+          message = body?.message || 'Action impossible: un club doit garder au moins un OWNER.';
+        }
         throw new Error(Array.isArray(message) ? message.join(', ') : message);
       }
       return body;
@@ -452,12 +512,13 @@ export class FrontendController {
       for (const book of result.data) {
         const card = document.createElement('article');
         card.className = 'club';
-        card.innerHTML = '<strong></strong><p class="muted"></p><div class="muted"></div><div class="row" style="margin-top:10px"><button type="button" class="secondary">Renommer</button><button type="button" class="danger">Supprimer</button></div>';
+        card.innerHTML = '<strong></strong><p class="muted"></p><div class="muted"></div><div class="row" style="margin-top:10px"><button type="button" class="secondary">Selectionner</button><button type="button" class="secondary">Renommer</button><button type="button" class="danger">Supprimer</button></div>';
         card.querySelector('strong').textContent = book.title;
         card.querySelector('p').textContent = book.author + (book.genre ? ' - ' + book.genre : '');
-        card.querySelector('div.muted').textContent = book.averageRating ? 'Note moyenne ' + book.averageRating.toFixed(1) + '/5' : 'Pas encore note';
+        card.querySelector('div.muted').textContent = (book.pageCount ? book.pageCount + ' pages - ' : '') + (book.averageRating ? 'Note moyenne ' + book.averageRating.toFixed(1) + '/5' : 'Pas encore note');
         const buttons = card.querySelectorAll('button');
-        buttons[0].addEventListener('click', async () => {
+        buttons[0].addEventListener('click', () => selectBook(book));
+        buttons[1].addEventListener('click', async () => {
           const title = prompt('Nouveau titre', book.title);
           if (!title) return;
           try {
@@ -471,7 +532,7 @@ export class FrontendController {
             setStatus(bookStatus, error.message, 'error');
           }
         });
-        buttons[1].addEventListener('click', async () => {
+        buttons[2].addEventListener('click', async () => {
           try {
             await request('/clubs/' + selectedClubId + '/books/' + book.id, {
               method: 'DELETE',
@@ -483,6 +544,29 @@ export class FrontendController {
           }
         });
         list.appendChild(card);
+      }
+    }
+
+    async function loadProgress() {
+      const list = $('progressList');
+      if (!selectedClubId || !selectedBookId) {
+        list.innerHTML = '<p class="muted">Aucun livre selectionne.</p>';
+        return;
+      }
+      const items = await request('/clubs/' + selectedClubId + '/books/' + selectedBookId + '/progress');
+      list.innerHTML = '';
+      if (!items.length) {
+        list.innerHTML = '<p class="muted">Aucune progression pour ce livre.</p>';
+        return;
+      }
+      for (const item of items) {
+        const row = document.createElement('div');
+        row.className = 'club';
+        row.innerHTML = '<strong></strong><p class="muted"></p><span class="pill"></span>';
+        row.querySelector('strong').textContent = item.user?.name || item.user?.email || item.userId;
+        row.querySelector('p').textContent = item.currentPage + '/' + (item.totalPages || '?') + ' pages - ' + item.status;
+        row.querySelector('span').textContent = item.progressPercent + '%';
+        list.appendChild(row);
       }
     }
 
@@ -552,21 +636,43 @@ export class FrontendController {
     $('createBook').addEventListener('click', async () => {
       try {
         if (!selectedClubId) throw new Error('Selectionne un club avant ajout.');
+        const pageCount = Number($('bookPageCount').value);
         const body = await request('/clubs/' + selectedClubId + '/books', {
           method: 'POST',
           body: JSON.stringify({
             title: $('bookTitle').value,
             author: $('bookAuthor').value,
             genre: $('bookGenre').value,
+            pageCount: pageCount > 0 ? pageCount : undefined,
             isbn: $('bookIsbn').value,
             description: $('bookDescription').value,
           }),
         });
         setStatus(bookStatus, 'Livre ajoute.', 'ok');
         await loadBooks();
+        selectBook(body);
         show(body);
       } catch (error) {
         setStatus(bookStatus, error.message, 'error');
+      }
+    });
+
+    $('saveProgress').addEventListener('click', async () => {
+      try {
+        if (!selectedClubId || !selectedBookId) throw new Error('Selectionne un livre avant de sauver.');
+        const body = await request('/clubs/' + selectedClubId + '/books/' + selectedBookId + '/progress/me', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: $('progressStatus').value,
+            currentPage: Number($('currentPage').value),
+            totalPages: Number($('totalPages').value),
+          }),
+        });
+        setStatus(progressStatusText, 'Progression sauvegardee.', 'ok');
+        await loadProgress();
+        show(body);
+      } catch (error) {
+        setStatus(progressStatusText, error.message, 'error');
       }
     });
 
@@ -591,6 +697,7 @@ export class FrontendController {
 
     $('refreshMembers').addEventListener('click', () => loadMembers().catch((error) => setStatus(memberStatus, error.message, 'error')));
     $('refreshBooks').addEventListener('click', () => loadBooks().catch((error) => setStatus(bookStatus, error.message, 'error')));
+    $('refreshProgress').addEventListener('click', () => loadProgress().catch((error) => setStatus(progressStatusText, error.message, 'error')));
     $('refreshClubs').addEventListener('click', () => loadClubs().catch((error) => show(error.message)));
     loadClubs().catch((error) => show(error.message));
   </script>
