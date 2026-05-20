@@ -12,768 +12,985 @@ export class FrontendController {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BookShelf API Tester</title>
+  <title>BookShelf</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f7f9;
+      --bg: #f4f6f8;
       --panel: #ffffff;
-      --text: #1d2433;
+      --panel-soft: #f8fafc;
+      --text: #182230;
       --muted: #667085;
-      --line: #d9dee8;
+      --line: #d7dde7;
       --brand: #2563eb;
       --brand-dark: #1d4ed8;
       --danger: #b42318;
       --ok: #067647;
+      --warn: #b54708;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     header {
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 18px 28px;
+      padding: 0 24px;
       background: var(--panel);
       border-bottom: 1px solid var(--line);
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: 10;
     }
-    h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 750;
-    }
+    h1, h2, h3 { margin: 0; }
+    h1 { font-size: 20px; font-weight: 800; }
+    h2 { font-size: 17px; font-weight: 760; }
+    h3 { font-size: 14px; font-weight: 740; }
     main {
-      width: min(1180px, calc(100% - 32px));
-      margin: 24px auto;
+      width: min(1280px, calc(100% - 32px));
+      margin: 20px auto 40px;
       display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
-      gap: 20px;
+      gap: 16px;
     }
-    section, .panel {
+    .shell {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 18px;
+      padding: 16px;
     }
-    h2 {
-      margin: 0 0 14px;
-      font-size: 16px;
-      font-weight: 720;
+    .soft {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
     }
-    h3 {
-      margin: 18px 0 10px;
-      font-size: 14px;
+    .stack { display: grid; gap: 12px; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     label {
       display: block;
-      margin: 12px 0 6px;
-      font-size: 13px;
-      font-weight: 650;
+      margin: 10px 0 5px;
       color: #344054;
+      font-size: 13px;
+      font-weight: 680;
     }
     input, textarea, select {
       width: 100%;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      padding: 10px 11px;
-      font: inherit;
-      background: #fff;
+      padding: 9px 10px;
+      background: #ffffff;
       color: var(--text);
+      font: inherit;
     }
     textarea {
-      min-height: 82px;
+      min-height: 76px;
       resize: vertical;
     }
     button {
       border: 1px solid transparent;
       border-radius: 6px;
-      padding: 10px 12px;
-      font: inherit;
-      font-weight: 700;
+      padding: 9px 11px;
       background: var(--brand);
-      color: #fff;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 740;
       cursor: pointer;
     }
     button:hover { background: var(--brand-dark); }
     button.secondary {
-      background: #fff;
+      background: #ffffff;
       color: #344054;
       border-color: #cbd5e1;
     }
     button.secondary:hover { background: #f8fafc; }
     button.danger {
-      background: #fff;
+      background: #ffffff;
       color: var(--danger);
-      border-color: #fecdca;
+      border-color: #fda29b;
     }
-    .row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
     }
-    .stack { display: grid; gap: 14px; }
     .muted { color: var(--muted); font-size: 13px; }
-    .status {
-      min-height: 22px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .status.ok { color: var(--ok); }
-    .status.error { color: var(--danger); }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 12px;
-    }
-    .club {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
-      background: #fff;
-    }
-    .club strong {
-      display: block;
-      margin-bottom: 6px;
-    }
+    .hidden { display: none !important; }
     .pill {
       display: inline-flex;
       align-items: center;
-      height: 24px;
+      min-height: 24px;
       padding: 0 8px;
       border-radius: 999px;
       background: #eef4ff;
       color: #3538cd;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 780;
     }
-    .todo {
-      border: 1px dashed #cbd5e1;
-      border-radius: 8px;
-      padding: 14px;
+    .pill.ok { background: #ecfdf3; color: var(--ok); }
+    .pill.warn { background: #fffaeb; color: var(--warn); }
+    .status {
+      min-height: 20px;
+      margin: 8px 0 0;
       color: var(--muted);
-      background: #fbfcfe;
+      font-size: 13px;
+    }
+    .status.ok { color: var(--ok); }
+    .status.error { color: var(--danger); }
+    .list {
+      display: grid;
+      gap: 8px;
+      max-height: 390px;
+      overflow: auto;
+    }
+    .item {
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+    .item.selected {
+      border-color: #84adff;
+      box-shadow: 0 0 0 2px #d1e0ff;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+    .tab {
+      background: #ffffff;
+      color: #344054;
+      border: 1px solid #cbd5e1;
+    }
+    .tab.active {
+      background: var(--brand);
+      color: #ffffff;
+      border-color: var(--brand);
     }
     pre {
+      margin: 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       background: #111827;
       color: #e5e7eb;
       border-radius: 8px;
       padding: 12px;
-      min-height: 120px;
+      min-height: 110px;
       font-size: 12px;
     }
-    @media (max-width: 860px) {
-      header { align-items: flex-start; flex-direction: column; }
-      main { grid-template-columns: 1fr; }
+    @media (max-width: 920px) {
+      header { height: auto; align-items: flex-start; flex-direction: column; padding: 14px 16px; }
+      .shell, .grid-2, .grid-3 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>BookShelf API Tester</h1>
-      <div class="muted">Interface locale pour tester les endpoints du projet.</div>
+      <h1>BookShelf</h1>
+      <div class="muted">Interface de test claire pour l'API de clubs de lecture.</div>
     </div>
     <div class="row">
-      <span id="sessionLabel" class="pill">Non connecte</span>
-      <button class="secondary" id="refreshClubs">Rafraichir</button>
+      <span id="sessionBadge" class="pill warn">Non connecte</span>
+      <button id="logoutBtn" class="secondary hidden">Deconnexion</button>
     </div>
   </header>
 
   <main>
-    <aside class="stack">
-      <section>
-        <h2>Auth</h2>
-        <label for="name">Nom</label>
-        <input id="name" value="Alice Reader" />
-        <label for="email">Email</label>
-        <input id="email" />
-        <label for="password">Mot de passe</label>
-        <input id="password" type="password" value="azertyuiop" />
-        <div class="row" style="margin-top:14px">
-          <button id="signUp">Inscription</button>
-          <button id="signIn" class="secondary">Connexion</button>
-          <button id="signOut" class="danger">Deconnexion</button>
+    <section id="authView" class="shell">
+      <div class="panel stack">
+        <div>
+          <h2>Connexion</h2>
+          <p class="muted">Connecte-toi pour gerer tes clubs, livres et progressions.</p>
         </div>
-        <p id="authStatus" class="status"></p>
-      </section>
+        <label for="authName">Nom</label>
+        <input id="authName" value="Nouveau lecteur" />
+        <label for="authEmail">Email</label>
+        <input id="authEmail" />
+        <label for="authPassword">Mot de passe</label>
+        <input id="authPassword" type="password" value="azertyuiop" />
+        <div class="row">
+          <button id="loginBtn">Connexion</button>
+          <button id="registerBtn" class="secondary">Inscription</button>
+        </div>
+        <p id="authMsg" class="status"></p>
+      </div>
 
-      <section>
-        <h2>Nouveau club</h2>
-        <label for="clubName">Nom</label>
-        <input id="clubName" value="Club des lecteurs" />
-        <label for="clubDescription">Description</label>
-        <textarea id="clubDescription">Lecture commune et discussions tranquilles.</textarea>
-        <label for="clubVisibility">Visibilite</label>
-        <select id="clubVisibility">
-          <option value="true">Public</option>
-          <option value="false">Prive</option>
-        </select>
-        <div class="row" style="margin-top:14px">
-          <button id="createClub">Creer le club</button>
+      <div class="panel stack">
+        <div>
+          <h2>Clubs publics</h2>
+          <p class="muted">Connecte-toi pour rejoindre le contexte de test et gerer les ressources autorisees.</p>
         </div>
-        <p id="clubStatus" class="status"></p>
-      </section>
+        <div id="publicClubList" class="list"></div>
+      </div>
+    </section>
 
-      <section>
-        <h2>Membres</h2>
-        <p class="muted">Pour gerer un club, connecte-toi avec son OWNER ou cree un nouveau club.</p>
-        <label for="selectedClub">Club selectionne</label>
-        <input id="selectedClub" readonly placeholder="Aucun club selectionne" />
-        <label for="editClubName">Nom du club</label>
-        <input id="editClubName" placeholder="Selectionne un club" />
-        <label for="editClubDescription">Description du club</label>
-        <textarea id="editClubDescription" placeholder="Selectionne un club"></textarea>
-        <label for="editClubVisibility">Visibilite du club</label>
-        <select id="editClubVisibility">
-          <option value="true">Public</option>
-          <option value="false">Prive</option>
-        </select>
-        <div class="row" style="margin-top:14px">
-          <button id="updateClub">Modifier le club</button>
-          <button id="deleteClub" class="danger">Supprimer le club</button>
+    <section id="appView" class="hidden shell">
+      <aside class="stack">
+        <div class="panel stack">
+          <div class="row" style="justify-content:space-between">
+            <h2>Clubs</h2>
+            <button id="reloadClubsBtn" class="secondary">Rafraichir</button>
+          </div>
+          <div id="clubList" class="list"></div>
         </div>
-        <h3>Invitation</h3>
-        <label for="inviteEmail">Email a inviter</label>
-        <input id="inviteEmail" value="bob@test.com" />
-        <label for="inviteRole">Role</label>
-        <select id="inviteRole">
-          <option value="READER">READER</option>
-          <option value="EDITOR">EDITOR</option>
-          <option value="OWNER">OWNER</option>
-        </select>
-        <div class="row" style="margin-top:14px">
-          <button id="inviteMember">Inviter / ajouter</button>
-          <button id="refreshMembers" class="secondary">Voir membres</button>
-        </div>
-        <p id="memberStatus" class="status"></p>
-      </section>
 
-      <section>
-        <h2>Nouveau livre</h2>
-        <label for="bookTitle">Titre</label>
-        <input id="bookTitle" value="Le Petit Prince" />
-        <label for="bookAuthor">Auteur</label>
-        <input id="bookAuthor" value="Antoine de Saint-Exupery" />
-        <label for="bookGenre">Genre</label>
-        <input id="bookGenre" value="Conte" />
-        <label for="bookPageCount">Nombre de pages</label>
-        <input id="bookPageCount" type="number" min="1" value="120" />
-        <label for="bookIsbn">ISBN</label>
-        <input id="bookIsbn" placeholder="Optionnel" />
-        <label for="bookDescription">Description</label>
-        <textarea id="bookDescription">Un classique a lire ensemble.</textarea>
-        <div class="row" style="margin-top:14px">
-          <button id="createBook">Ajouter le livre</button>
-          <button id="updateBook" class="secondary">Modifier le livre selectionne</button>
+        <div class="panel stack">
+          <h2>Nouveau club</h2>
+          <label for="newClubName">Nom</label>
+          <input id="newClubName" value="Club des lecteurs" />
+          <label for="newClubDescription">Description</label>
+          <textarea id="newClubDescription">Lecture commune et discussions.</textarea>
+          <label for="newClubPublic">Visibilite</label>
+          <select id="newClubPublic">
+            <option value="true">Public</option>
+            <option value="false">Prive</option>
+          </select>
+          <button id="createClubBtn">Creer le club</button>
+          <p id="clubCreateMsg" class="status"></p>
         </div>
-        <p id="bookStatus" class="status"></p>
-      </section>
+      </aside>
 
-      <section>
-        <h2>Progression</h2>
-        <p class="muted">Selectionne un livre pour suivre ta lecture.</p>
-        <label for="selectedBook">Livre selectionne</label>
-        <input id="selectedBook" readonly placeholder="Aucun livre selectionne" />
-        <label for="progressStatus">Statut</label>
-        <select id="progressStatus">
-          <option value="NOT_STARTED">NOT_STARTED</option>
-          <option value="READING">READING</option>
-          <option value="COMPLETED">COMPLETED</option>
-          <option value="ABANDONED">ABANDONED</option>
-        </select>
-        <label for="currentPage">Page actuelle</label>
-        <input id="currentPage" type="number" min="0" value="0" />
-        <label for="totalPages">Nombre total de pages</label>
-        <input id="totalPages" type="number" min="1" value="120" />
-        <div class="row" style="margin-top:14px">
-          <button id="saveProgress">Sauver progression</button>
-          <button id="refreshProgress" class="secondary">Voir global</button>
+      <div class="stack">
+        <div id="emptyState" class="panel">
+          <h2>Aucun club selectionne</h2>
+          <p class="muted">Selectionne un club public ou cree ton club pour tester les fonctionnalites.</p>
         </div>
-        <p id="progressStatusText" class="status"></p>
-      </section>
-    </aside>
 
-    <div class="stack">
-      <section>
-        <h2>Clubs publics</h2>
-        <div id="clubs" class="cards"></div>
-      </section>
+        <div id="clubWorkspace" class="hidden stack">
+          <div class="panel stack">
+            <div class="row" style="justify-content:space-between">
+              <div>
+                <h2 id="selectedClubName">Club</h2>
+                <div id="selectedClubMeta" class="muted"></div>
+              </div>
+              <span id="clubRoleBadge" class="pill warn">Role inconnu</span>
+            </div>
+            <div id="permissionHint" class="soft muted"></div>
+          </div>
 
-      <section>
-        <h2>Membres du club</h2>
-        <div id="members" class="stack">
-          <p class="muted">Aucun club selectionne.</p>
+          <div class="panel stack">
+            <div class="tabs">
+              <button class="tab active" data-tab="overview">Club</button>
+              <button class="tab" data-tab="members">Membres</button>
+              <button class="tab" data-tab="books">Livres</button>
+              <button class="tab" data-tab="progress">Progression</button>
+            </div>
+
+            <section id="tab-overview" class="tabPanel stack">
+              <div class="grid-2">
+                <div class="soft stack">
+                  <h3>Modifier le club</h3>
+                  <label for="editClubName">Nom</label>
+                  <input id="editClubName" />
+                  <label for="editClubDescription">Description</label>
+                  <textarea id="editClubDescription"></textarea>
+                  <label for="editClubPublic">Visibilite</label>
+                  <select id="editClubPublic">
+                    <option value="true">Public</option>
+                    <option value="false">Prive</option>
+                  </select>
+                  <div class="row">
+                    <button id="updateClubBtn">Enregistrer</button>
+                    <button id="deleteClubBtn" class="danger">Supprimer</button>
+                  </div>
+                  <p id="clubEditMsg" class="status"></p>
+                </div>
+                <div class="soft stack">
+                  <h3>Etat des droits</h3>
+                  <div id="rightsSummary" class="muted"></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="tab-members" class="tabPanel hidden stack">
+              <div class="grid-2">
+                <div class="soft stack">
+                  <h3>Inviter / ajouter un membre</h3>
+                  <label for="inviteEmail">Email</label>
+                  <input id="inviteEmail" value="reader@test.com" />
+                  <label for="inviteRole">Role</label>
+                  <select id="inviteRole">
+                    <option value="READER">READER</option>
+                    <option value="EDITOR">EDITOR</option>
+                    <option value="OWNER">OWNER</option>
+                  </select>
+                  <button id="inviteBtn">Inviter</button>
+                  <p id="memberMsg" class="status"></p>
+                </div>
+                <div class="soft stack">
+                  <h3>Membres du club</h3>
+                  <div id="memberList" class="list"></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="tab-books" class="tabPanel hidden stack">
+              <div class="grid-2">
+                <div class="soft stack">
+                  <h3 id="bookFormTitle">Ajouter un livre</h3>
+                  <label for="bookTitle">Titre</label>
+                  <input id="bookTitle" value="Le Petit Prince" />
+                  <label for="bookAuthor">Auteur</label>
+                  <input id="bookAuthor" value="Antoine de Saint-Exupery" />
+                  <label for="bookGenre">Genre</label>
+                  <input id="bookGenre" value="Conte" />
+                  <label for="bookPageCount">Pages</label>
+                  <input id="bookPageCount" type="number" min="1" value="120" />
+                  <label for="bookIsbn">ISBN</label>
+                  <input id="bookIsbn" />
+                  <label for="bookDescription">Description</label>
+                  <textarea id="bookDescription">Un classique a lire ensemble.</textarea>
+                  <div class="row">
+                    <button id="createBookBtn">Ajouter</button>
+                    <button id="updateBookBtn" class="secondary">Modifier la selection</button>
+                    <button id="clearBookBtn" class="secondary">Vider</button>
+                  </div>
+                  <p id="bookMsg" class="status"></p>
+                </div>
+                <div class="soft stack">
+                  <div class="row" style="justify-content:space-between">
+                    <h3>Livres du club</h3>
+                    <button id="reloadBooksBtn" class="secondary">Rafraichir</button>
+                  </div>
+                  <div class="grid-3">
+                    <input id="filterTitle" placeholder="Titre" />
+                    <input id="filterAuthor" placeholder="Auteur" />
+                    <input id="filterGenre" placeholder="Genre" />
+                  </div>
+                  <button id="filterBooksBtn" class="secondary">Filtrer</button>
+                  <div id="bookList" class="list"></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="tab-progress" class="tabPanel hidden stack">
+              <div class="grid-2">
+                <div class="soft stack">
+                  <h3>Ma progression</h3>
+                  <div id="selectedBookLabel" class="muted">Aucun livre selectionne.</div>
+                  <label for="progressStatus">Statut</label>
+                  <select id="progressStatus">
+                    <option value="NOT_STARTED">NOT_STARTED</option>
+                    <option value="READING">READING</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="ABANDONED">ABANDONED</option>
+                  </select>
+                  <label for="currentPage">Page actuelle</label>
+                  <input id="currentPage" type="number" min="0" value="0" />
+                  <label for="totalPages">Pages totales</label>
+                  <input id="totalPages" type="number" min="1" value="120" />
+                  <button id="saveProgressBtn">Sauver</button>
+                  <p id="progressMsg" class="status"></p>
+                </div>
+                <div class="soft stack">
+                  <div class="row" style="justify-content:space-between">
+                    <h3>Progression globale</h3>
+                    <button id="reloadProgressBtn" class="secondary">Voir</button>
+                  </div>
+                  <div id="progressList" class="list"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="panel stack">
+            <h2>Derniere reponse API</h2>
+            <pre id="apiOutput">Pret.</pre>
+          </div>
         </div>
-      </section>
-
-      <section>
-        <h2>Livres du club</h2>
-        <div class="row" style="margin-bottom:12px">
-          <input id="filterTitle" placeholder="Filtrer par titre" />
-          <input id="filterAuthor" placeholder="Auteur" />
-          <input id="filterGenre" placeholder="Genre" />
-          <button id="refreshBooks" class="secondary">Filtrer</button>
-        </div>
-        <div id="books" class="cards">
-          <p class="muted">Aucun club selectionne.</p>
-        </div>
-      </section>
-
-      <section>
-        <h2>Progression du livre</h2>
-        <div id="progressList" class="stack">
-          <p class="muted">Aucun livre selectionne.</p>
-        </div>
-      </section>
-
-      <section>
-        <h2>Modules suivants</h2>
-        <div class="stack">
-          <div class="todo"><strong>Avis</strong><br />Unicite par utilisateur et note moyenne.</div>
-          <div class="todo"><strong>Admin / CSV</strong><br />Gestion utilisateurs et imports transactionnels.</div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Derniere reponse API</h2>
-        <pre id="output">Pret.</pre>
-      </section>
-    </div>
+      </div>
+    </section>
   </main>
 
   <script>
     const api = location.origin;
-    let currentUser = null;
-    let selectedClubId = null;
-    let selectedBookId = null;
-    const defaultEmail = 'reader-' + Date.now() + '@test.com';
+    const state = {
+      user: null,
+      clubs: [],
+      selectedClub: null,
+      members: [],
+      books: [],
+      selectedBook: null,
+      membership: null
+    };
 
-    const $ = (id) => document.getElementById(id);
-    const output = $('output');
-    const authStatus = $('authStatus');
-    const clubStatus = $('clubStatus');
-    const memberStatus = $('memberStatus');
-    const bookStatus = $('bookStatus');
-    const progressStatusText = $('progressStatusText');
-    const sessionLabel = $('sessionLabel');
-    $('email').value = defaultEmail;
+    const el = (id) => document.getElementById(id);
+    const randomEmail = 'reader-' + Date.now() + '@test.com';
+    el('authEmail').value = randomEmail;
 
-    function show(data) {
-      output.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    function showOutput(data) {
+      el('apiOutput').textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
     }
 
-    function setStatus(el, message, kind = '') {
-      el.textContent = message;
-      el.className = 'status ' + kind;
+    function message(id, text, kind) {
+      const node = el(id);
+      node.textContent = text || '';
+      node.className = 'status ' + (kind || '');
     }
 
-    function setUser(user) {
-      currentUser = user;
-      sessionLabel.textContent = user ? user.email : 'Non connecte';
+    function friendlyError(path, response, body) {
+      let msg = body && body.message ? body.message : response.statusText;
+      if (Array.isArray(msg)) msg = msg.join(', ');
+      if (response.status === 401) return 'Tu dois etre connecte pour faire cette action.';
+      if (response.status === 403 && path.includes('/members')) return 'Action refusee: seul un OWNER du club peut gerer les membres.';
+      if (response.status === 403 && path.includes('/books')) return 'Action refusee: il faut etre membre pour lire, et OWNER ou EDITOR pour modifier les livres.';
+      if (response.status === 403 && path.includes('/progress')) return 'Action refusee: seuls OWNER et EDITOR peuvent voir la progression globale.';
+      if (response.status === 422 && path.includes('/sign-up/email')) return 'Inscription refusee: email deja utilise ou donnees invalides.';
+      return msg || 'Erreur API';
     }
 
-    function selectClub(club) {
-      selectedClubId = club.id;
-      selectedBookId = null;
-      $('selectedClub').value = club.name + ' (' + club.id + ')';
-      $('editClubName').value = club.name;
-      $('editClubDescription').value = club.description || '';
-      $('editClubVisibility').value = String(club.isPublic);
-      $('selectedBook').value = '';
-      loadMembers().catch((error) => setStatus(memberStatus, error.message, 'error'));
-      loadBooks().catch((error) => setStatus(bookStatus, error.message, 'error'));
-      loadProgress().catch((error) => setStatus(progressStatusText, error.message, 'error'));
-    }
-
-    function selectBook(book) {
-      selectedBookId = book.id;
-      $('selectedBook').value = book.title + ' (' + book.id + ')';
-      $('bookTitle').value = book.title;
-      $('bookAuthor').value = book.author;
-      $('bookGenre').value = book.genre || '';
-      $('bookPageCount').value = book.pageCount || '';
-      $('bookIsbn').value = book.isbn || '';
-      $('bookDescription').value = book.description || '';
-      if (book.pageCount) {
-        $('totalPages').value = book.pageCount;
-      }
-      setStatus(progressStatusText, 'Livre selectionne.', 'ok');
-      loadProgress().catch((error) => setStatus(progressStatusText, error.message, 'error'));
-    }
-
-    async function request(path, options = {}) {
+    async function request(path, options) {
       const response = await fetch(api + path, {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options.headers || {}),
-        },
-        ...options,
+        headers: { 'Content-Type': 'application/json' },
+        ...(options || {})
       });
       const text = await response.text();
       let body = text;
       try { body = text ? JSON.parse(text) : null; } catch (_) {}
-      show(body);
-      if (!response.ok) {
-        let message = body?.message || body?.code || response.statusText;
-        if (response.status === 422 && path.includes('/auth/sign-up/email')) {
-          message = 'Inscription refusee: email deja utilise ou donnees invalides. Essaie Connexion ou change email.';
-        }
-        if (response.status === 403 && path.includes('/books')) {
-          message = 'Acces refuse: seuls les membres du club peuvent voir les livres, et seuls OWNER/EDITOR peuvent les modifier.';
-        }
-        if (response.status === 403 && path.includes('/members')) {
-          message = 'Acces refuse: seul un OWNER du club peut gerer les membres.';
-        }
-        if (response.status === 400 && path.includes('/members')) {
-          message = body?.message || 'Action impossible: un club doit garder au moins un OWNER.';
-        }
-        throw new Error(Array.isArray(message) ? message.join(', ') : message);
-      }
+      showOutput(body);
+      if (!response.ok) throw new Error(friendlyError(path, response, body));
       return body;
     }
 
-    async function loadClubs() {
-      const result = await request('/clubs');
-      const list = $('clubs');
+    function role() {
+      return state.membership ? state.membership.role : null;
+    }
+
+    function isOwner() {
+      return role() === 'OWNER';
+    }
+
+    function canEditBooks() {
+      return role() === 'OWNER' || role() === 'EDITOR';
+    }
+
+    function setAuthenticated(user) {
+      state.user = user;
+      el('authView').classList.toggle('hidden', !!user);
+      el('appView').classList.toggle('hidden', !user);
+      el('logoutBtn').classList.toggle('hidden', !user);
+      el('sessionBadge').textContent = user ? user.email + ' - ' + user.role : 'Non connecte';
+      el('sessionBadge').className = user ? 'pill ok' : 'pill warn';
+      if (user) refreshClubs();
+    }
+
+    function renderPublicClubs() {
+      const list = el('publicClubList');
       list.innerHTML = '';
-      if (!result.data.length) {
+      if (!state.clubs.length) {
         list.innerHTML = '<p class="muted">Aucun club public pour le moment.</p>';
         return;
       }
-      for (const club of result.data) {
-        const card = document.createElement('article');
-        card.className = 'club';
-        card.innerHTML = '<strong></strong><p class="muted"></p><div class="row"><span class="pill"></span><button class="secondary" type="button">Selectionner</button></div>';
-        card.querySelector('strong').textContent = club.name;
-        card.querySelector('p').textContent = club.description || 'Sans description';
-        card.querySelector('span').textContent = club.memberCount + ' membre(s)';
-        card.querySelector('button').addEventListener('click', () => selectClub(club));
-        list.appendChild(card);
+      state.clubs.forEach((club) => {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = '<strong></strong><div class="muted"></div><span class="pill"></span>';
+        item.querySelector('strong').textContent = club.name;
+        item.querySelector('.muted').textContent = club.description || 'Sans description';
+        item.querySelector('.pill').textContent = club.memberCount + ' membre(s)';
+        list.appendChild(item);
+      });
+    }
+
+    function renderClubs() {
+      const list = el('clubList');
+      list.innerHTML = '';
+      if (!state.clubs.length) {
+        list.innerHTML = '<p class="muted">Aucun club public.</p>';
+        return;
+      }
+      state.clubs.forEach((club) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'item secondary' + (state.selectedClub && state.selectedClub.id === club.id ? ' selected' : '');
+        item.innerHTML = '<strong></strong><span class="muted"></span>';
+        item.querySelector('strong').textContent = club.name;
+        item.querySelector('span').textContent = (club.description || 'Sans description') + ' - ' + club.memberCount + ' membre(s)';
+        item.addEventListener('click', () => selectClub(club));
+        list.appendChild(item);
+      });
+    }
+
+    function renderWorkspace() {
+      const hasClub = !!state.selectedClub;
+      el('emptyState').classList.toggle('hidden', hasClub);
+      el('clubWorkspace').classList.toggle('hidden', !hasClub);
+      if (!hasClub) return;
+
+      el('selectedClubName').textContent = state.selectedClub.name;
+      el('selectedClubMeta').textContent = (state.selectedClub.description || 'Sans description') + ' - ' + (state.selectedClub.isPublic ? 'public' : 'prive');
+      el('clubRoleBadge').textContent = role() || 'Non membre';
+      el('clubRoleBadge').className = role() ? 'pill ok' : 'pill warn';
+      el('permissionHint').textContent = rightsText();
+      el('rightsSummary').textContent = rightsText();
+
+      el('updateClubBtn').disabled = !isOwner();
+      el('deleteClubBtn').disabled = !isOwner();
+      el('inviteBtn').disabled = !isOwner();
+      el('createBookBtn').disabled = !canEditBooks();
+      el('updateBookBtn').disabled = !canEditBooks() || !state.selectedBook;
+      el('saveProgressBtn').disabled = !role() || !state.selectedBook;
+      renderMembers();
+      renderBooks();
+      renderProgress([]);
+    }
+
+    function rightsText() {
+      if (!role()) return 'Tu peux voir le club public, mais tu dois etre membre pour consulter les livres et la progression.';
+      if (role() === 'OWNER') return 'OWNER: tu peux modifier le club, gerer les membres, gerer les livres et voir la progression globale.';
+      if (role() === 'EDITOR') return 'EDITOR: tu peux gerer les livres et voir la progression globale.';
+      return 'READER: tu peux consulter les livres et mettre a jour ta progression.';
+    }
+
+    function renderMembers() {
+      const list = el('memberList');
+      list.innerHTML = '';
+      if (!state.members.length) {
+        list.innerHTML = '<p class="muted">Aucun membre charge.</p>';
+        return;
+      }
+      state.members.forEach((member) => {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = '<strong></strong><div class="muted"></div><div class="row"><select><option value="OWNER">OWNER</option><option value="EDITOR">EDITOR</option><option value="READER">READER</option></select><button class="secondary">Changer</button><button class="danger">Retirer</button></div>';
+        item.querySelector('strong').textContent = member.user.name || member.user.email;
+        item.querySelector('.muted').textContent = member.user.email;
+        const select = item.querySelector('select');
+        select.value = member.role;
+        select.disabled = !isOwner();
+        const buttons = item.querySelectorAll('button');
+        buttons[0].disabled = !isOwner();
+        buttons[1].disabled = !isOwner();
+        buttons[0].addEventListener('click', () => updateMemberRole(member.id, select.value));
+        buttons[1].addEventListener('click', () => removeMember(member.id));
+        list.appendChild(item);
+      });
+    }
+
+    function renderBooks() {
+      const list = el('bookList');
+      list.innerHTML = '';
+      if (!role()) {
+        list.innerHTML = '<p class="muted">Connecte-toi comme membre du club pour voir les livres.</p>';
+        return;
+      }
+      if (!state.books.length) {
+        list.innerHTML = '<p class="muted">Aucun livre pour ce club.</p>';
+        return;
+      }
+      state.books.forEach((book) => {
+        const item = document.createElement('div');
+        item.className = 'item' + (state.selectedBook && state.selectedBook.id === book.id ? ' selected' : '');
+        item.innerHTML = '<strong></strong><div class="muted"></div><div class="row"><span class="pill"></span><button class="secondary">Selectionner</button><button class="danger">Supprimer</button></div>';
+        item.querySelector('strong').textContent = book.title;
+        item.querySelector('.muted').textContent = book.author + (book.genre ? ' - ' + book.genre : '');
+        item.querySelector('.pill').textContent = book.pageCount ? book.pageCount + ' pages' : 'pages ?';
+        const buttons = item.querySelectorAll('button');
+        buttons[0].addEventListener('click', () => selectBook(book));
+        buttons[1].disabled = !canEditBooks();
+        buttons[1].addEventListener('click', () => deleteBook(book.id));
+        list.appendChild(item);
+      });
+    }
+
+    function renderProgress(items) {
+      const list = el('progressList');
+      list.innerHTML = '';
+      if (!state.selectedBook) {
+        list.innerHTML = '<p class="muted">Selectionne un livre.</p>';
+        return;
+      }
+      if (!items.length) {
+        list.innerHTML = '<p class="muted">Aucune progression globale chargee.</p>';
+        return;
+      }
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.innerHTML = '<strong></strong><div class="muted"></div><span class="pill"></span>';
+        row.querySelector('strong').textContent = item.user && item.user.name ? item.user.name : item.userId;
+        row.querySelector('.muted').textContent = item.currentPage + '/' + (item.totalPages || '?') + ' pages - ' + item.status;
+        row.querySelector('.pill').textContent = item.progressPercent + '%';
+        list.appendChild(row);
+      });
+    }
+
+    async function refreshClubs() {
+      try {
+        const result = await request('/clubs');
+        state.clubs = result.data || [];
+        renderPublicClubs();
+        renderClubs();
+      } catch (error) {
+        message('clubCreateMsg', error.message, 'error');
       }
     }
 
+    async function selectClub(club) {
+      state.selectedClub = club;
+      state.selectedBook = null;
+      state.members = [];
+      state.books = [];
+      state.membership = null;
+      el('editClubName').value = club.name;
+      el('editClubDescription').value = club.description || '';
+      el('editClubPublic').value = String(club.isPublic);
+      clearBookForm();
+      renderClubs();
+      renderWorkspace();
+      await loadMembers();
+      await loadBooks();
+    }
+
     async function loadMembers() {
-      const list = $('members');
-      if (!selectedClubId) {
-        list.innerHTML = '<p class="muted">Aucun club selectionne.</p>';
-        return;
-      }
-      const members = await request('/clubs/' + selectedClubId + '/members');
-      list.innerHTML = '';
-      if (!members.length) {
-        list.innerHTML = '<p class="muted">Aucun membre.</p>';
-        return;
-      }
-      for (const member of members) {
-        const row = document.createElement('div');
-        row.className = 'club';
-        row.innerHTML = '<strong></strong><p class="muted"></p><div class="row"><select><option value="OWNER">OWNER</option><option value="EDITOR">EDITOR</option><option value="READER">READER</option></select><button type="button" class="secondary">Changer role</button><button type="button" class="danger">Retirer</button></div>';
-        row.querySelector('strong').textContent = member.user.name || member.user.email;
-        row.querySelector('p').textContent = member.user.email;
-        row.querySelector('select').value = member.role;
-        const buttons = row.querySelectorAll('button');
-        buttons[0].addEventListener('click', async () => {
-          try {
-            await request('/clubs/' + selectedClubId + '/members/' + member.id, {
-              method: 'PATCH',
-              body: JSON.stringify({ role: row.querySelector('select').value }),
-            });
-            setStatus(memberStatus, 'Role mis a jour.', 'ok');
-            await loadMembers();
-          } catch (error) {
-            setStatus(memberStatus, error.message, 'error');
-          }
-        });
-        buttons[1].addEventListener('click', async () => {
-          try {
-            await request('/clubs/' + selectedClubId + '/members/' + member.id, {
-              method: 'DELETE',
-            });
-            setStatus(memberStatus, 'Membre retire.', 'ok');
-            await loadMembers();
-            await loadClubs();
-          } catch (error) {
-            setStatus(memberStatus, error.message, 'error');
-          }
-        });
-        list.appendChild(row);
+      if (!state.selectedClub) return;
+      try {
+        state.members = await request('/clubs/' + state.selectedClub.id + '/members');
+        state.membership = state.members.find((member) => state.user && member.userId === state.user.id) || null;
+        renderWorkspace();
+      } catch (error) {
+        state.members = [];
+        state.membership = null;
+        renderWorkspace();
+        message('memberMsg', error.message, 'error');
       }
     }
 
     function bookQuery() {
       const params = new URLSearchParams();
-      if ($('filterTitle').value.trim()) params.set('title', $('filterTitle').value.trim());
-      if ($('filterAuthor').value.trim()) params.set('author', $('filterAuthor').value.trim());
-      if ($('filterGenre').value.trim()) params.set('genre', $('filterGenre').value.trim());
+      if (el('filterTitle').value.trim()) params.set('title', el('filterTitle').value.trim());
+      if (el('filterAuthor').value.trim()) params.set('author', el('filterAuthor').value.trim());
+      if (el('filterGenre').value.trim()) params.set('genre', el('filterGenre').value.trim());
       const query = params.toString();
       return query ? '?' + query : '';
     }
 
     async function loadBooks() {
-      const list = $('books');
-      if (!selectedClubId) {
-        list.innerHTML = '<p class="muted">Aucun club selectionne.</p>';
+      if (!state.selectedClub || !role()) {
+        state.books = [];
+        renderBooks();
         return;
       }
-      const result = await request('/clubs/' + selectedClubId + '/books' + bookQuery());
-      list.innerHTML = '';
-      if (!result.data.length) {
-        list.innerHTML = '<p class="muted">Aucun livre pour ce club.</p>';
-        return;
-      }
-      for (const book of result.data) {
-        const card = document.createElement('article');
-        card.className = 'club';
-        card.innerHTML = '<strong></strong><p class="muted"></p><div class="muted"></div><div class="row" style="margin-top:10px"><button type="button" class="secondary">Selectionner</button><button type="button" class="secondary">Modifier</button><button type="button" class="danger">Supprimer</button></div>';
-        card.querySelector('strong').textContent = book.title;
-        card.querySelector('p').textContent = book.author + (book.genre ? ' - ' + book.genre : '');
-        card.querySelector('div.muted').textContent = (book.pageCount ? book.pageCount + ' pages - ' : '') + (book.averageRating ? 'Note moyenne ' + book.averageRating.toFixed(1) + '/5' : 'Pas encore note');
-        const buttons = card.querySelectorAll('button');
-        buttons[0].addEventListener('click', () => selectBook(book));
-        buttons[1].addEventListener('click', () => selectBook(book));
-        buttons[2].addEventListener('click', async () => {
-          try {
-            await request('/clubs/' + selectedClubId + '/books/' + book.id, {
-              method: 'DELETE',
-            });
-            setStatus(bookStatus, 'Livre supprime.', 'ok');
-            await loadBooks();
-          } catch (error) {
-            setStatus(bookStatus, error.message, 'error');
-          }
-        });
-        list.appendChild(card);
-      }
-    }
-
-    async function loadProgress() {
-      const list = $('progressList');
-      if (!selectedClubId || !selectedBookId) {
-        list.innerHTML = '<p class="muted">Aucun livre selectionne.</p>';
-        return;
-      }
-      const items = await request('/clubs/' + selectedClubId + '/books/' + selectedBookId + '/progress');
-      list.innerHTML = '';
-      if (!items.length) {
-        list.innerHTML = '<p class="muted">Aucune progression pour ce livre.</p>';
-        return;
-      }
-      for (const item of items) {
-        const row = document.createElement('div');
-        row.className = 'club';
-        row.innerHTML = '<strong></strong><p class="muted"></p><span class="pill"></span>';
-        row.querySelector('strong').textContent = item.user?.name || item.user?.email || item.userId;
-        row.querySelector('p').textContent = item.currentPage + '/' + (item.totalPages || '?') + ' pages - ' + item.status;
-        row.querySelector('span').textContent = item.progressPercent + '%';
-        list.appendChild(row);
-      }
-    }
-
-    $('signUp').addEventListener('click', async () => {
       try {
-        const body = await request('/auth/sign-up/email', {
-          method: 'POST',
-          body: JSON.stringify({
-            name: $('name').value,
-            email: $('email').value,
-            password: $('password').value,
-          }),
-        });
-        setUser(body.user);
-        setStatus(authStatus, 'Inscription OK.', 'ok');
+        const result = await request('/clubs/' + state.selectedClub.id + '/books' + bookQuery());
+        state.books = result.data || [];
+        renderBooks();
       } catch (error) {
-        setStatus(authStatus, error.message, 'error');
+        state.books = [];
+        renderBooks();
+        message('bookMsg', error.message, 'error');
       }
-    });
+    }
 
-    $('signIn').addEventListener('click', async () => {
+    function selectBook(book) {
+      state.selectedBook = book;
+      el('bookFormTitle').textContent = 'Modifier le livre selectionne';
+      el('bookTitle').value = book.title;
+      el('bookAuthor').value = book.author;
+      el('bookGenre').value = book.genre || '';
+      el('bookPageCount').value = book.pageCount || '';
+      el('bookIsbn').value = book.isbn || '';
+      el('bookDescription').value = book.description || '';
+      el('selectedBookLabel').textContent = book.title + ' - ' + (book.pageCount || '?') + ' pages';
+      el('totalPages').value = book.pageCount || '';
+      renderWorkspace();
+    }
+
+    function clearBookForm() {
+      state.selectedBook = null;
+      el('bookFormTitle').textContent = 'Ajouter un livre';
+      el('bookTitle').value = 'Le Petit Prince';
+      el('bookAuthor').value = 'Antoine de Saint-Exupery';
+      el('bookGenre').value = 'Conte';
+      el('bookPageCount').value = '120';
+      el('bookIsbn').value = '';
+      el('bookDescription').value = 'Un classique a lire ensemble.';
+      el('selectedBookLabel').textContent = 'Aucun livre selectionne.';
+      renderWorkspace();
+    }
+
+    async function login() {
       try {
         const body = await request('/auth/sign-in/email', {
           method: 'POST',
           body: JSON.stringify({
-            email: $('email').value,
-            password: $('password').value,
-            rememberMe: true,
-          }),
+            email: el('authEmail').value,
+            password: el('authPassword').value,
+            rememberMe: true
+          })
         });
-        setUser(body.user);
-        setStatus(authStatus, 'Connexion OK.', 'ok');
+        setAuthenticated(body.user);
+        message('authMsg', 'Connexion OK.', 'ok');
       } catch (error) {
-        setStatus(authStatus, error.message, 'error');
+        message('authMsg', error.message, 'error');
       }
-    });
+    }
 
-    $('signOut').addEventListener('click', async () => {
+    async function register() {
+      try {
+        const body = await request('/auth/sign-up/email', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: el('authName').value,
+            email: el('authEmail').value || randomEmail,
+            password: el('authPassword').value
+          })
+        });
+        setAuthenticated(body.user);
+        message('authMsg', 'Inscription OK.', 'ok');
+      } catch (error) {
+        message('authMsg', error.message, 'error');
+      }
+    }
+
+    async function logout() {
       try {
         await request('/auth/sign-out', { method: 'POST', body: '{}' });
-        setUser(null);
-        setStatus(authStatus, 'Deconnexion OK.', 'ok');
-      } catch (error) {
-        setStatus(authStatus, error.message, 'error');
-      }
-    });
+      } catch (_) {}
+      state.user = null;
+      state.selectedClub = null;
+      state.selectedBook = null;
+      setAuthenticated(null);
+      await refreshClubs();
+    }
 
-    $('createClub').addEventListener('click', async () => {
+    async function createClub() {
       try {
-        const body = await request('/clubs', {
+        const club = await request('/clubs', {
           method: 'POST',
           body: JSON.stringify({
-            name: $('clubName').value,
-            description: $('clubDescription').value,
-            isPublic: $('clubVisibility').value === 'true',
-          }),
+            name: el('newClubName').value,
+            description: el('newClubDescription').value,
+            isPublic: el('newClubPublic').value === 'true'
+          })
         });
-        setStatus(clubStatus, 'Club cree.', 'ok');
-        await loadClubs();
-        selectClub(body);
-        show(body);
+        message('clubCreateMsg', 'Club cree.', 'ok');
+        await refreshClubs();
+        await selectClub(club);
       } catch (error) {
-        setStatus(clubStatus, error.message, 'error');
+        message('clubCreateMsg', error.message, 'error');
       }
-    });
+    }
 
-    $('updateClub').addEventListener('click', async () => {
+    async function updateClub() {
       try {
-        if (!selectedClubId) throw new Error('Selectionne un club avant modification.');
-        const body = await request('/clubs/' + selectedClubId, {
+        const club = await request('/clubs/' + state.selectedClub.id, {
           method: 'PATCH',
           body: JSON.stringify({
-            name: $('editClubName').value,
-            description: $('editClubDescription').value,
-            isPublic: $('editClubVisibility').value === 'true',
-          }),
+            name: el('editClubName').value,
+            description: el('editClubDescription').value,
+            isPublic: el('editClubPublic').value === 'true'
+          })
         });
-        setStatus(memberStatus, 'Club modifie.', 'ok');
-        await loadClubs();
-        selectClub(body);
-        show(body);
+        message('clubEditMsg', 'Club modifie.', 'ok');
+        await refreshClubs();
+        await selectClub(club);
       } catch (error) {
-        setStatus(memberStatus, error.message, 'error');
+        message('clubEditMsg', error.message, 'error');
       }
-    });
+    }
 
-    $('deleteClub').addEventListener('click', async () => {
+    async function deleteClub() {
+      if (!state.selectedClub || !confirm('Supprimer ce club ?')) return;
       try {
-        if (!selectedClubId) throw new Error('Selectionne un club avant suppression.');
-        if (!confirm('Supprimer ce club et ses livres ?')) return;
-        await request('/clubs/' + selectedClubId, { method: 'DELETE' });
-        selectedClubId = null;
-        selectedBookId = null;
-        $('selectedClub').value = '';
-        $('selectedBook').value = '';
-        setStatus(memberStatus, 'Club supprime.', 'ok');
-        await loadClubs();
+        await request('/clubs/' + state.selectedClub.id, { method: 'DELETE' });
+        state.selectedClub = null;
+        state.selectedBook = null;
+        message('clubEditMsg', 'Club supprime.', 'ok');
+        await refreshClubs();
+        renderWorkspace();
+      } catch (error) {
+        message('clubEditMsg', error.message, 'error');
+      }
+    }
+
+    async function inviteMember() {
+      try {
+        const result = await request('/clubs/' + state.selectedClub.id + '/members/invitations', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: el('inviteEmail').value,
+            role: el('inviteRole').value
+          })
+        });
+        message('memberMsg', result.status === 'PENDING_INVITATION' ? 'Invitation creee.' : 'Utilisateur ajoute.', 'ok');
         await loadMembers();
-        await loadBooks();
-        await loadProgress();
+        await refreshClubs();
       } catch (error) {
-        setStatus(memberStatus, error.message, 'error');
+        message('memberMsg', error.message, 'error');
       }
-    });
+    }
 
-    $('createBook').addEventListener('click', async () => {
+    async function updateMemberRole(memberId, nextRole) {
       try {
-        if (!selectedClubId) throw new Error('Selectionne un club avant ajout.');
-        const pageCount = Number($('bookPageCount').value);
-        const body = await request('/clubs/' + selectedClubId + '/books', {
-          method: 'POST',
-          body: JSON.stringify({
-            title: $('bookTitle').value,
-            author: $('bookAuthor').value,
-            genre: $('bookGenre').value,
-            pageCount: pageCount > 0 ? pageCount : undefined,
-            isbn: $('bookIsbn').value,
-            description: $('bookDescription').value,
-          }),
-        });
-        setStatus(bookStatus, 'Livre ajoute.', 'ok');
-        await loadBooks();
-        selectBook(body);
-        show(body);
-      } catch (error) {
-        setStatus(bookStatus, error.message, 'error');
-      }
-    });
-
-    $('updateBook').addEventListener('click', async () => {
-      try {
-        if (!selectedClubId || !selectedBookId) throw new Error('Selectionne un livre avant modification.');
-        const pageCount = Number($('bookPageCount').value);
-        const body = await request('/clubs/' + selectedClubId + '/books/' + selectedBookId, {
+        await request('/clubs/' + state.selectedClub.id + '/members/' + memberId, {
           method: 'PATCH',
-          body: JSON.stringify({
-            title: $('bookTitle').value,
-            author: $('bookAuthor').value,
-            genre: $('bookGenre').value,
-            pageCount: pageCount > 0 ? pageCount : undefined,
-            isbn: $('bookIsbn').value,
-            description: $('bookDescription').value,
-          }),
+          body: JSON.stringify({ role: nextRole })
         });
-        setStatus(bookStatus, 'Livre modifie.', 'ok');
-        await loadBooks();
-        selectBook(body);
-        show(body);
-      } catch (error) {
-        setStatus(bookStatus, error.message, 'error');
-      }
-    });
-
-    $('saveProgress').addEventListener('click', async () => {
-      try {
-        if (!selectedClubId || !selectedBookId) throw new Error('Selectionne un livre avant de sauver.');
-        const body = await request('/clubs/' + selectedClubId + '/books/' + selectedBookId + '/progress/me', {
-          method: 'PATCH',
-          body: JSON.stringify({
-            status: $('progressStatus').value,
-            currentPage: Number($('currentPage').value),
-            totalPages: Number($('totalPages').value),
-          }),
-        });
-        setStatus(progressStatusText, 'Progression sauvegardee.', 'ok');
-        await loadProgress();
-        show(body);
-      } catch (error) {
-        setStatus(progressStatusText, error.message, 'error');
-      }
-    });
-
-    $('inviteMember').addEventListener('click', async () => {
-      try {
-        if (!selectedClubId) throw new Error('Selectionne un club avant invitation.');
-        const body = await request('/clubs/' + selectedClubId + '/members/invitations', {
-          method: 'POST',
-          body: JSON.stringify({
-            email: $('inviteEmail').value,
-            role: $('inviteRole').value,
-          }),
-        });
-        setStatus(memberStatus, 'Invitation traitee.', 'ok');
+        message('memberMsg', 'Role modifie.', 'ok');
         await loadMembers();
-        await loadClubs();
-        show(body);
       } catch (error) {
-        setStatus(memberStatus, error.message, 'error');
+        message('memberMsg', error.message, 'error');
       }
-    });
+    }
 
-    $('refreshMembers').addEventListener('click', () => loadMembers().catch((error) => setStatus(memberStatus, error.message, 'error')));
-    $('refreshBooks').addEventListener('click', () => loadBooks().catch((error) => setStatus(bookStatus, error.message, 'error')));
-    $('refreshProgress').addEventListener('click', () => loadProgress().catch((error) => setStatus(progressStatusText, error.message, 'error')));
-    $('refreshClubs').addEventListener('click', () => loadClubs().catch((error) => show(error.message)));
-    loadClubs().catch((error) => show(error.message));
+    async function removeMember(memberId) {
+      try {
+        await request('/clubs/' + state.selectedClub.id + '/members/' + memberId, { method: 'DELETE' });
+        message('memberMsg', 'Membre retire.', 'ok');
+        await loadMembers();
+        await refreshClubs();
+      } catch (error) {
+        message('memberMsg', error.message, 'error');
+      }
+    }
+
+    function bookPayload() {
+      const pageCount = Number(el('bookPageCount').value);
+      return {
+        title: el('bookTitle').value,
+        author: el('bookAuthor').value,
+        genre: el('bookGenre').value,
+        pageCount: pageCount > 0 ? pageCount : undefined,
+        isbn: el('bookIsbn').value,
+        description: el('bookDescription').value
+      };
+    }
+
+    async function createBook() {
+      try {
+        const book = await request('/clubs/' + state.selectedClub.id + '/books', {
+          method: 'POST',
+          body: JSON.stringify(bookPayload())
+        });
+        message('bookMsg', 'Livre ajoute.', 'ok');
+        await loadBooks();
+        selectBook(book);
+      } catch (error) {
+        message('bookMsg', error.message, 'error');
+      }
+    }
+
+    async function updateBook() {
+      if (!state.selectedBook) {
+        message('bookMsg', 'Selectionne un livre a modifier.', 'error');
+        return;
+      }
+      try {
+        const book = await request('/clubs/' + state.selectedClub.id + '/books/' + state.selectedBook.id, {
+          method: 'PATCH',
+          body: JSON.stringify(bookPayload())
+        });
+        message('bookMsg', 'Livre modifie.', 'ok');
+        await loadBooks();
+        selectBook(book);
+      } catch (error) {
+        message('bookMsg', error.message, 'error');
+      }
+    }
+
+    async function deleteBook(bookId) {
+      if (!confirm('Supprimer ce livre ?')) return;
+      try {
+        await request('/clubs/' + state.selectedClub.id + '/books/' + bookId, { method: 'DELETE' });
+        if (state.selectedBook && state.selectedBook.id === bookId) clearBookForm();
+        message('bookMsg', 'Livre supprime.', 'ok');
+        await loadBooks();
+      } catch (error) {
+        message('bookMsg', error.message, 'error');
+      }
+    }
+
+    async function saveProgress() {
+      if (!state.selectedBook) {
+        message('progressMsg', 'Selectionne un livre.', 'error');
+        return;
+      }
+      try {
+        const progress = await request('/clubs/' + state.selectedClub.id + '/books/' + state.selectedBook.id + '/progress/me', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: el('progressStatus').value,
+            currentPage: Number(el('currentPage').value),
+            totalPages: Number(el('totalPages').value)
+          })
+        });
+        message('progressMsg', 'Progression sauvegardee: ' + progress.progressPercent + '% - ' + progress.status, 'ok');
+      } catch (error) {
+        message('progressMsg', error.message, 'error');
+      }
+    }
+
+    async function loadProgress() {
+      if (!state.selectedBook) {
+        message('progressMsg', 'Selectionne un livre.', 'error');
+        return;
+      }
+      try {
+        const items = await request('/clubs/' + state.selectedClub.id + '/books/' + state.selectedBook.id + '/progress');
+        renderProgress(items);
+        message('progressMsg', 'Progression globale chargee.', 'ok');
+      } catch (error) {
+        renderProgress([]);
+        message('progressMsg', error.message, 'error');
+      }
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
+      document.querySelectorAll('.tabPanel').forEach((panel) => panel.classList.add('hidden'));
+      el('tab-' + name).classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+    el('loginBtn').addEventListener('click', login);
+    el('registerBtn').addEventListener('click', register);
+    el('logoutBtn').addEventListener('click', logout);
+    el('reloadClubsBtn').addEventListener('click', refreshClubs);
+    el('createClubBtn').addEventListener('click', createClub);
+    el('updateClubBtn').addEventListener('click', updateClub);
+    el('deleteClubBtn').addEventListener('click', deleteClub);
+    el('inviteBtn').addEventListener('click', inviteMember);
+    el('createBookBtn').addEventListener('click', createBook);
+    el('updateBookBtn').addEventListener('click', updateBook);
+    el('clearBookBtn').addEventListener('click', clearBookForm);
+    el('reloadBooksBtn').addEventListener('click', loadBooks);
+    el('filterBooksBtn').addEventListener('click', loadBooks);
+    el('saveProgressBtn').addEventListener('click', saveProgress);
+    el('reloadProgressBtn').addEventListener('click', loadProgress);
+
+    refreshClubs();
   </script>
 </body>
 </html>`;
