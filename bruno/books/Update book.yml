@@ -1,0 +1,22 @@
+info:
+  name: Update book
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: "{{host}}/clubs/{{clubId}}/books/{{bookId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Le Petit Prince - lecture commune",
+        "pageCount": 120,
+        "description": "Edition suivie dans le club."
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

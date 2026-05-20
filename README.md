@@ -248,6 +248,21 @@ Les routes sont regroupees par modules :
 
 L'authentification utilise le cookie Better Auth apres connexion via `/auth/sign-in/email`.
 
+## Collection Bruno
+
+Une collection Bruno est fournie dans le dossier `bruno/`.
+
+Pour l'utiliser :
+
+1. Ouvrir Bruno Desktop.
+2. Cliquer sur `Open Collection`.
+3. Selectionner le dossier `bruno`.
+4. Choisir l'environnement `Development`.
+5. Renseigner la variable secrete `adminPassword`.
+6. Lancer `Auth / Sign in admin` ou `Auth / Sign up email`, puis les requetes dans l'ordre des dossiers.
+
+Les variables `clubId`, `bookId`, `memberId`, `reviewId` et `userId` sont remplies automatiquement par certaines reponses pour faciliter les tests.
+
 ## Tests
 
 ```bash

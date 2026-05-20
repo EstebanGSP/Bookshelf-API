@@ -1,0 +1,22 @@
+info:
+  name: Update club
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{host}}/clubs/{{clubId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Club Bruno modifie",
+        "description": "Description modifiee depuis Bruno",
+        "isPublic": true
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

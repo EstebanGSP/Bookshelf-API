@@ -1,0 +1,20 @@
+info:
+  name: Update member role
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: "{{host}}/clubs/{{clubId}}/members/{{memberId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "role": "EDITOR"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

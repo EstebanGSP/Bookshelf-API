@@ -1,7 +1,7 @@
 opencollection: 1.0.0
 
 info:
-  name: Live coding
+  name: BookShelf API
 config:
   proxy:
     inherit: true
@@ -18,6 +18,8 @@ request:
   headers:
     - name: Origin
       value: "{{host}}"
+    - name: Content-Type
+      value: application/json
 bundled: false
 extensions:
   bruno:

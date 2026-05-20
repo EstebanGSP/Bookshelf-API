@@ -1,0 +1,22 @@
+info:
+  name: Sign in admin
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{host}}/auth/sign-in/email"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{adminEmail}}",
+        "password": "{{adminPassword}}",
+        "rememberMe": true
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

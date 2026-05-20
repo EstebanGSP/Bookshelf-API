@@ -1,14 +1,11 @@
 info:
-  name: Sign out
+  name: Export club books
   type: http
   seq: 4
 
 http:
-  method: POST
-  url: "{{host}}/auth/sign-out"
-  body:
-    type: json
-    data: "{}"
+  method: GET
+  url: "{{host}}/clubs/{{clubId}}/exports/books"
 
 settings:
   encodeUrl: true

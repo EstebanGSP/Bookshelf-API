@@ -1,0 +1,30 @@
+info:
+  name: Create review
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{host}}/clubs/{{clubId}}/books/{{bookId}}/reviews"
+  body:
+    type: json
+    data: |-
+      {
+        "rating": 5,
+        "comment": "Tres bonne lecture."
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.getBody();
+        if (data?.id) {
+          bru.setEnvVar("reviewId", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

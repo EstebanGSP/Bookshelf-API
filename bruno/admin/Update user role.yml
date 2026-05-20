@@ -1,0 +1,20 @@
+info:
+  name: Update user role
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: "{{host}}/users/{{userId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "role": "USER"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

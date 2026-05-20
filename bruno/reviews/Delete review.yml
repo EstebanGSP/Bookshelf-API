@@ -1,14 +1,11 @@
 info:
-  name: Sign out
+  name: Delete review
   type: http
   seq: 4
 
 http:
-  method: POST
-  url: "{{host}}/auth/sign-out"
-  body:
-    type: json
-    data: "{}"
+  method: DELETE
+  url: "{{host}}/clubs/{{clubId}}/books/{{bookId}}/reviews/{{reviewId}}"
 
 settings:
   encodeUrl: true

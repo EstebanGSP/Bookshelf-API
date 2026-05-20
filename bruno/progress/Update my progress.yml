@@ -1,0 +1,20 @@
+info:
+  name: Update my progress
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: "{{host}}/clubs/{{clubId}}/books/{{bookId}}/progress/me"
+  body:
+    type: json
+    data: |-
+      {
+        "currentPage": 12
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

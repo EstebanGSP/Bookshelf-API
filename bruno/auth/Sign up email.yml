@@ -1,0 +1,29 @@
+info:
+  name: Sign up email
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{host}}/auth/sign-up/email"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Bruno Reader",
+        "email": "reader-{{$timestamp}}@test.com",
+        "password": "{{userPassword}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.getBody();
+        if (data?.user?.email) bru.setEnvVar("currentUserEmail", data.user.email, { persist: true });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

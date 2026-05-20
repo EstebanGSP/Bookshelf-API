@@ -1,14 +1,11 @@
 info:
-  name: Sign out
+  name: Remove member
   type: http
   seq: 4
 
 http:
-  method: POST
-  url: "{{host}}/auth/sign-out"
-  body:
-    type: json
-    data: "{}"
+  method: DELETE
+  url: "{{host}}/clubs/{{clubId}}/members/{{memberId}}"
 
 settings:
   encodeUrl: true

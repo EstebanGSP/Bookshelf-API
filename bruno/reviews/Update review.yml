@@ -1,0 +1,21 @@
+info:
+  name: Update review
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: "{{host}}/clubs/{{clubId}}/books/{{bookId}}/reviews/{{reviewId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "rating": 4,
+        "comment": "Avis modifie depuis Bruno."
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

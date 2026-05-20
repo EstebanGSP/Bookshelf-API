@@ -1,8 +1,23 @@
 name: Development
 variables:
   - name: host
-    value: http://localhost:3000
-  - secret: true
-    name: token
+    value: http://localhost:3001
   - name: currentUserEmail
-    value: aileen_connelly@hotmail.com
+    value: reader@test.com
+  - name: userPassword
+    value: azertyuiop
+  - name: adminEmail
+    value: gaspar.esteban60@gmail.com
+  - secret: true
+    name: adminPassword
+    value: CHANGE_ME
+  - name: clubId
+    value: ""
+  - name: bookId
+    value: ""
+  - name: memberId
+    value: ""
+  - name: reviewId
+    value: ""
+  - name: userId
+    value: ""

@@ -1,14 +1,11 @@
 info:
-  name: Sign out
+  name: Disable user
   type: http
   seq: 4
 
 http:
-  method: POST
-  url: "{{host}}/auth/sign-out"
-  body:
-    type: json
-    data: "{}"
+  method: PATCH
+  url: "{{host}}/admin/users/{{userId}}/disable"
 
 settings:
   encodeUrl: true

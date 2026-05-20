@@ -1,0 +1,20 @@
+info:
+  name: Import catalog books
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{host}}/admin/imports/catalog-books"
+  body:
+    type: json
+    data: |-
+      {
+        "csv": "isbn,title,author,genre,pageCount,description,publishedAt\nBRUNO-{{$timestamp}},Livre Bruno,Auteur Bruno,Test,120,Import Bruno,2024-01-01"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

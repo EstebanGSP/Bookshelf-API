@@ -1,0 +1,34 @@
+info:
+  name: Create book
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{host}}/clubs/{{clubId}}/books"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Le Petit Prince",
+        "author": "Antoine de Saint-Exupery",
+        "isbn": "9782070612758",
+        "genre": "Conte",
+        "pageCount": 120,
+        "description": "Un classique a lire ensemble."
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.getBody();
+        if (data?.id) {
+          bru.setEnvVar("bookId", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,14 @@
+info:
+  name: Export catalog books
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{host}}/admin/exports/catalog-books"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

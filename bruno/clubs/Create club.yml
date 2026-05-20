@@ -1,0 +1,29 @@
+info:
+  name: Create club
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{host}}/clubs"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Club Bruno {{$timestamp}}",
+        "description": "Club cree depuis la collection Bruno",
+        "isPublic": true
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.getBody();
+        if (data?.id) bru.setEnvVar("clubId", data.id, { persist: true });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

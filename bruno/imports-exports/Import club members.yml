@@ -1,0 +1,20 @@
+info:
+  name: Import club members
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{host}}/clubs/{{clubId}}/imports/members"
+  body:
+    type: json
+    data: |-
+      {
+        "csv": "email,role\nbruno-member-{{$timestamp}}@example.com,READER"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
