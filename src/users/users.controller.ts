@@ -78,7 +78,8 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Consulter un utilisateur' })
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Consulter un utilisateur (ADMIN)' })
   async findOne(@UUIDParam('id') id: string) {
     const user = await this.usersService.findOne(id);
     if (!user) throw new NotFoundException(`User ${id} not found`);

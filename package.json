@@ -86,6 +86,7 @@
     "moduleNameMapper": {
       "^@thallesp/nestjs-better-auth$": "<rootDir>/test/mocks/nestjs-better-auth.ts",
       "^better-auth$": "<rootDir>/test/mocks/better-auth.ts",
+      "^better-auth/node$": "<rootDir>/test/mocks/better-auth-node.ts",
       "^better-auth/adapters/prisma$": "<rootDir>/test/mocks/better-auth-prisma-adapter.ts",
       "^better-auth/plugins/admin$": "<rootDir>/test/mocks/better-auth-plugin-admin.ts",
       "^better-auth/plugins/jwt$": "<rootDir>/test/mocks/better-auth-plugin-jwt.ts",
