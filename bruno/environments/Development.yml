@@ -7,7 +7,7 @@ variables:
   - name: userPassword
     value: azertyuiop
   - name: adminEmail
-    value: gaspar.esteban60@gmail.com
+    value: admin@example.com
   - secret: true
     name: adminPassword
     value: CHANGE_ME
